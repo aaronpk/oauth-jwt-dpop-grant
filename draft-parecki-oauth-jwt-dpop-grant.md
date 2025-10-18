@@ -21,7 +21,7 @@ venue:
   mail: "oauth@ietf.org"
   arch: "https://mailarchive.ietf.org/arch/browse/oauth/"
   github: "aaronpk/oauth-jwt-dpop-grant"
-  latest: "https://aaronpk.github.io/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html"
+  latest: "https://drafts.aaronpk.com/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html"
 
 author:
  -
