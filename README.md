@@ -4,7 +4,7 @@
 
 This is the working area for the individual Internet-Draft, "OAuth 2.0 JWT Authorization Grant with DPoP Token Binding".
 
-* [Editor's Copy](https://aaronpk.github.io/oauth-jwt-dpop-grant/#go.draft-parecki-oauth-jwt-dpop-grant.html)
+* [Editor's Copy](https://drafts.aaronpk.com/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-parecki-oauth-jwt-dpop-grant)
 * [Individual Draft](https://datatracker.ietf.org/doc/html/draft-parecki-oauth-jwt-dpop-grant)
 * [Compare Editor's Copy to Individual Draft](https://drafts.aaronpk.com/oauth-jwt-dpop-grant/#go.draft-parecki-oauth-jwt-dpop-grant.diff)
