@@ -30,10 +30,12 @@ author:
     email: aaron@parecki.com
 
 normative:
+  RFC6755:
   RFC6749:
   RFC7519:
   RFC7521:
   RFC7523:
+  RFC7800:
   I-D.ietf-oauth-rfc7523bis:
   RFC9449:
 
@@ -127,7 +129,7 @@ purposes only):
     eyJpc3Mi[...omitted for brevity...].
     J9l-ZhwP[...omitted for brevity...]
 
-# JWT Format and Processing Requirements
+# JWT Format and Processing Requirements {#cnf}
 
 The authorization server MUST validate the JWT according to the criteria
 below. Application of additional restrictions and policy are at the
