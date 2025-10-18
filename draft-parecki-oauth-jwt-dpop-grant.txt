@@ -8,7 +8,7 @@ Intended status: Standards Track                         18 October 2025
 Expires: 21 April 2026
 
 
-       OAuth 2.0 JWT Authorization Grant with DPoP Token Binding
+          OAuth 2.0 JWT Authorization Grant with DPoP Binding
                draft-parecki-oauth-jwt-dpop-grant-latest
 
 Abstract
