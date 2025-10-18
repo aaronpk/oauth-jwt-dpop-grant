@@ -1,5 +1,5 @@
 ---
-title: "OAuth 2.0 JWT Authorization Grant with DPoP Token Binding"
+title: "OAuth 2.0 JWT Authorization Grant with DPoP Binding"
 abbrev: "JWT Authorization Grant with DPoP"
 category: std
 
