@@ -181,7 +181,7 @@ This specification requests registration of the following value in the
 * URN: `urn:ietf:params:oauth:grant-type:jwt-dpop`
 * Common Name: DPoP-bound JWT Authorization Grant
 * Change Controller: IESG
-* Specification Document(s): [this document]
+* Specification Document(s): this document
 
 
 --- back
