@@ -9,7 +9,7 @@ number:
 date:
 consensus: true
 v: 3
-area: Security
+area: "Security"
 workgroup: "Web Authorization Protocol"
 keyword:
  - jwt
@@ -21,7 +21,7 @@ venue:
   mail: "oauth@ietf.org"
   arch: "https://mailarchive.ietf.org/arch/browse/oauth/"
   github: "aaronpk/oauth-jwt-dpop-grant"
-  latest: "https://drafts.aaronpk.com/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html"
+  latest: "https://aaronpk.github.io/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html"
 
 author:
  -
