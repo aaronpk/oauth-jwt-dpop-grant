@@ -92,7 +92,7 @@ JWT DPoP-Bound Tokens.
 
 ## Using DPoP-Bound JWTs as Authorization Grants
 
-To use a DPoP-bound JWT as an authorization grant, the client uses an
+To use a DPoP-bound JWT as an authorization grant, the client makes an
 access token request as defined in {{Section 4 of RFC7521}}
 with the following specific parameter values and encodings.
 
@@ -143,10 +143,11 @@ discretion of the authorization server.
    to the processing rules in {{Section 3.1 of RFC7523}} and {{Section 4 of I-D.ietf-oauth-rfc7523bis}}.
 3. The authorization server MUST verify that the JWT assertion contains
    a `cnf` claim as defined in {{RFC7800}}. This `cnf`
-   claim MUST contain a `jwk` property representing a public key.
-4. The authorization server MUST verify that the public key in the
-   `jwk` property of the `cnf` claim of the JWT assertion exactly
-   matches the public key in the `jwk` header of the DPoP proof.
+   claim MUST contain a `jkt` property with the hash of the public key
+   as defined in {{Section 6.1 of RFC9449}}.
+4. The authorization server MUST verify that the value of the the
+   `jkt` property of the `cnf` claim of the JWT assertion exactly
+   matches the value of the `jkt` in the DPoP proof.
 
 If any of these validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
@@ -191,5 +192,16 @@ This specification requests registration of the following value in the
 # Acknowledgments
 {:numbered="false"}
 
-TODO acknowledge.
+The authors would like to thank the following people for their contributions and reviews of this specification: Filip Skokan, Karl McGuinness.
+
+
+# Document History
+{:numbered="false"}
+
+\[\[ To be removed from the final specification ]]
+
+-01
+
+* Changed DPoP check to use `jkt` string instead of `jwk` object to be able to use simple string comparison.
+
 
