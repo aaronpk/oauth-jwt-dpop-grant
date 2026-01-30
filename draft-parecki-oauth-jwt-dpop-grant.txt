@@ -4,8 +4,8 @@
 
 Web Authorization Protocol                                    A. Parecki
 Internet-Draft                                                      Okta
-Intended status: Standards Track                         18 October 2025
-Expires: 21 April 2026
+Intended status: Standards Track                         30 January 2026
+Expires: 3 August 2026
 
 
           OAuth 2.0 JWT Authorization Grant with DPoP Binding
@@ -53,11 +53,11 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 21 April 2026.
+   This Internet-Draft will expire on 3 August 2026.
 
 Copyright Notice
 
-   Copyright (c) 2025 IETF Trust and the persons identified as the
+   Copyright (c) 2026 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -83,6 +83,7 @@ Table of Contents
      6.1.  OAuth URI Registration
    7.  Normative References
    Acknowledgments
+   Document History
    Author's Address
 
 1.  Introduction
@@ -130,8 +131,8 @@ Table of Contents
 
 3.1.  Using DPoP-Bound JWTs as Authorization Grants
 
-   To use a DPoP-bound JWT as an authorization grant, the client uses an
-   access token request as defined in Section 4 of [RFC7521] with the
+   To use a DPoP-bound JWT as an authorization grant, the client makes
+   an access token request as defined in Section 4 of [RFC7521] with the
    following specific parameter values and encodings.
 
    grant_type:  REQUIRED - The value MUST be
@@ -183,11 +184,12 @@ Table of Contents
 
    3.  The authorization server MUST verify that the JWT assertion
        contains a cnf claim as defined in [RFC7800].  This cnf claim
-       MUST contain a jwk property representing a public key.
+       MUST contain a jkt property with the hash of the public key as
+       defined in Section 6.1 of [RFC9449].
 
-   4.  The authorization server MUST verify that the public key in the
-       jwk property of the cnf claim of the JWT assertion exactly
-       matches the public key in the jwk header of the DPoP proof.
+   4.  The authorization server MUST verify that the value of the the
+       jkt property of the cnf claim of the JWT assertion exactly
+       matches the value of the jkt in the DPoP proof.
 
    If any of these validation steps fail, the authorization server MUST
    return an invalid_grant error response.
@@ -236,9 +238,9 @@ Table of Contents
               "Updates to OAuth 2.0 JSON Web Token (JWT) Client
               Authentication and Assertion-Based Authorization Grants",
               Work in Progress, Internet-Draft, draft-ietf-oauth-
-              rfc7523bis-03, 7 October 2025,
+              rfc7523bis-05, 12 January 2026,
               <https://datatracker.ietf.org/doc/html/draft-ietf-oauth-
-              rfc7523bis-03>.
+              rfc7523bis-05>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -283,7 +285,18 @@ Table of Contents
 
 Acknowledgments
 
-   TODO acknowledge.
+   The authors would like to thank the following people for their
+   contributions and reviews of this specification: Filip Skokan, Karl
+   McGuinness.
+
+Document History
+
+   [[ To be removed from the final specification ]]
+
+   -01
+
+   *  Changed DPoP check to use jkt string instead of jwk object to be
+      able to use simple string comparison.
 
 Author's Address
 
