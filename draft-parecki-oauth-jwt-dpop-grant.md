@@ -41,6 +41,7 @@ normative:
   RFC9449:
 
 informative:
+  RFC8414:
 
 ...
 
@@ -162,6 +163,19 @@ MUST return an error response as described in {{Section 5 of RFC9449}}
 If any of the remaining validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
 
+## Use with the JWT Bearer Grant Type {#jwt-bearer}
+
+An authorization server that supports the grant type defined in this
+specification MUST NOT accept a DPoP-bound JWT assertion as an
+authorization grant using the `urn:ietf:params:oauth:grant-type:jwt-bearer`
+grant type defined in {{RFC7523}}, and MUST return an `invalid_grant`
+error response if one is presented. This applies whether or not the
+request includes a `DPoP` header field.
+
+An authorization server that supports this specification SHOULD include
+`urn:ietf:params:oauth:grant-type:jwt-dpop` in the `grant_types_supported`
+value of its authorization server metadata {{RFC8414}}.
+
 # Access Token Response
 
 If the request is valid, the authorization server issues an access
@@ -181,6 +195,30 @@ specifications are all applicable to this document:
 "OAuth 2.0 Demonstrating Proof of Possession (DPoP)" {{RFC9449}},
 "The OAuth 2.0 Authorization Framework" {{RFC6749}},
 and "JSON Web Token (JWT)" {{RFC7519}}.
+
+## Downgrade to the JWT Bearer Grant
+
+The binding of a DPoP-bound JWT assertion only provides protection if
+the authorization server enforces it. An attacker that obtains a
+DPoP-bound JWT assertion, but not the corresponding private key, could
+present the assertion using the `urn:ietf:params:oauth:grant-type:jwt-bearer`
+grant type instead of the grant type defined in this specification. An
+authorization server that processes the assertion only according to
+{{RFC7523}} would ignore the `cnf` claim and issue an access token,
+defeating the binding entirely.
+
+Authorization servers that support this specification prevent this
+attack by rejecting DPoP-bound JWT assertions presented with the
+`jwt-bearer` grant type, as required by {{jwt-bearer}}.
+
+Authorization servers that do not implement this specification are not
+aware of this requirement and may accept a DPoP-bound JWT assertion as
+a bearer assertion. For this reason, an issuer of DPoP-bound JWT
+assertions SHOULD NOT issue one for use at an authorization server
+unless it knows that the authorization server supports this
+specification, for example because the authorization server advertises
+`urn:ietf:params:oauth:grant-type:jwt-dpop` in its `grant_types_supported`
+metadata {{RFC8414}}, or by prior configuration.
 
 
 # IANA Considerations
@@ -215,6 +253,7 @@ The authors would like to thank the following people for their contributions and
 * Defined "DPoP-bound JWT assertion" and used the term consistently.
 * Use DPoP error codes for DPoP proof validation failures.
 * Moved Access Token Response to a top-level section.
+* Added requirement to reject DPoP-bound JWT assertions presented with the `jwt-bearer` grant type, and security considerations for downgrade attacks.
 * Clarified that the DPoP proof's `jwk` is compared to `cnf.jkt` by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.
 
 -01
