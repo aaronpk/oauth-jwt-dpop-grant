@@ -42,6 +42,8 @@ normative:
 
 informative:
   RFC8414:
+  RFC8693:
+  I-D.ietf-oauth-identity-assertion-authz-grant:
 
 ...
 
@@ -77,6 +79,15 @@ for an access token, the client must provide a DPoP proof demonstrating
 possession of the key to which the assertion is bound. This makes the
 JWT assertion a sender-constrained credential.
 
+A motivating use case is the Identity Assertion JWT Authorization Grant
+{{I-D.ietf-oauth-identity-assertion-authz-grant}}, in which a client
+obtains a JWT assertion from an identity provider, typically using
+Token Exchange {{RFC8693}}, and presents it to the authorization server
+of a different trust domain. Binding that assertion to a DPoP key
+prevents it from being used by any party other than the client that
+requested it, and allows the resulting access token to be bound to the
+same key.
+
 # Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
@@ -89,6 +100,53 @@ DPoP-bound JWT assertion:
 : A JWT assertion that contains a `cnf` claim with a `jkt` confirmation
   method member identifying the public key to which the assertion is bound.
 
+# Obtaining a DPoP-Bound JWT Assertion {#issuance}
+
+This specification does not define how a client obtains a DPoP-bound
+JWT assertion. Any mechanism may be used, provided that the issuer of
+the assertion binds it to a key controlled by the client. This section
+describes requirements on the issuer, and one way of meeting them.
+
+The issuer of a DPoP-bound JWT assertion:
+
+* MUST include a `cnf` claim containing a `jkt` confirmation method
+  member, whose value is the JWK SHA-256 Thumbprint {{RFC7638}} of the
+  client's public key, as described in {{Section 6.1 of RFC9449}}.
+* SHOULD verify that the client possesses the private key corresponding
+  to that public key before issuing the assertion.
+* MUST NOT include more than one `jkt` value, or any other confirmation
+  method member alongside `jkt`.
+
+When the assertion is obtained from an OAuth token endpoint, such as by
+Token Exchange {{RFC8693}}, the client can demonstrate possession of the
+key by including a `DPoP` header field in that request, as defined in
+{{Section 5 of RFC9449}}. The issuer validates the DPoP proof and uses
+the thumbprint of the public key in the proof as the value of
+`cnf.jkt` in the issued assertion. The client then uses the same key
+when presenting the assertion as described in {{parameters}}.
+
+For example, when obtaining an Identity Assertion JWT Authorization
+Grant (ID-JAG) as described in {{I-D.ietf-oauth-identity-assertion-authz-grant}},
+the client includes a `DPoP` header field in the Token Exchange request
+to the identity provider, and the identity provider includes the
+resulting `cnf.jkt` value in the issued ID-JAG.
+
+The following non-normative example shows the decoded claims of a
+DPoP-bound ID-JAG:
+
+    {
+      "iss": "https://idp.example.com",
+      "sub": "U019488227",
+      "aud": "https://as.example.net",
+      "client_id": "f53f191f9311af35",
+      "exp": 1311281970,
+      "iat": 1311280970,
+      "jti": "9a8b3cb8-7a1e-4d2c-8c5e-0f3e6a2c7b1d",
+      "cnf": {
+        "jkt": "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I"
+      }
+    }
+
 # HTTP Parameter Bindings for Transporting Assertions
 
 The OAuth Assertion Framework {{RFC7521}} defines generic HTTP
@@ -97,7 +155,7 @@ during interactions with a token endpoint.  This section defines
 specific parameters and treatments of those parameters for use with
 DPoP-bound JWT assertions.
 
-## Using DPoP-Bound JWT Assertions as Authorization Grants
+## Using DPoP-Bound JWT Assertions as Authorization Grants {#parameters}
 
 To use a DPoP-bound JWT assertion as an authorization grant, the client makes an
 access token request as defined in {{Section 4 of RFC7521}}
@@ -253,6 +311,8 @@ The authors would like to thank the following people for their contributions and
 * Defined "DPoP-bound JWT assertion" and used the term consistently.
 * Use DPoP error codes for DPoP proof validation failures.
 * Moved Access Token Response to a top-level section.
+* Added a section describing requirements on the issuer of a DPoP-bound JWT assertion, with an example.
+* Added the Identity Assertion JWT Authorization Grant as a motivating use case.
 * Added requirement to reject DPoP-bound JWT assertions presented with the `jwt-bearer` grant type, and security considerations for downgrade attacks.
 * Clarified that the DPoP proof's `jwk` is compared to `cnf.jkt` by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.
 
