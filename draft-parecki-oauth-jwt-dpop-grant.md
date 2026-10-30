@@ -139,11 +139,11 @@ DPoP-bound ID-JAG:
       "sub": "U019488227",
       "aud": "https://as.example.net",
       "client_id": "f53f191f9311af35",
-      "exp": 1311281970,
-      "iat": 1311280970,
+      "exp": 1793400300,
+      "iat": 1793400000,
       "jti": "9a8b3cb8-7a1e-4d2c-8c5e-0f3e6a2c7b1d",
       "cnf": {
-        "jkt": "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I"
+        "jkt": "GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA"
       }
     }
 
@@ -180,19 +180,20 @@ relies on the parameter is used.
 The client MUST also include a `DPoP` header field as defined in {{Section 4 of RFC9449}},
 which constitutes a proof of possession for the key to which the assertion is bound.
 
-The following example demonstrates an access token request with a JWT
-as an authorization grant (with extra line breaks for display
-purposes only):
+The following example demonstrates an access token request with a
+DPoP-bound JWT assertion as an authorization grant (with extra line
+breaks for display purposes only). The complete request, with decoded
+values, is shown in {{complete-example}}.
 
     POST /token HTTP/1.1
-    Host: as.example.com
+    Host: as.example.net
     Content-Type: application/x-www-form-urlencoded
-    DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrI...
+    DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6
+      [...omitted for brevity...]
 
     grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-dpop
-    &assertion=eyJhbGciOiJFUzI1NiIsImtpZCI6IjE2In0.
-    eyJpc3Mi[...omitted for brevity...].
-    J9l-ZhwP[...omitted for brevity...]
+    &assertion=eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYi
+    [...omitted for brevity...]
 
 # JWT Format and Processing Requirements {#processing}
 
@@ -336,6 +337,149 @@ This specification requests registration of the following value in the
 
 --- back
 
+# Complete Example {#complete-example}
+
+This appendix contains a complete example of an access token request
+using a DPoP-bound ID-JAG. The signatures in this example can be
+verified using the public keys shown. Line breaks within JWTs and
+within the canonical JWK below are for display purposes only.
+
+## Identity Provider Key
+
+The ID-JAG is signed by the identity provider using the following
+key, shown as a JWK:
+
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "RQAT9mqfwKatL9zm1ckKHIyDvjt45YePri8FEw3bbBw",
+      "y": "do5FLL-GZqbHgCQlkNs-qpJC6fWghRQsAwrl9cPD73M",
+      "kid": "idp-key-1",
+      "use": "sig",
+      "alg": "ES256"
+    }
+
+## DPoP-Bound JWT Assertion
+
+The decoded JOSE header of the ID-JAG:
+
+    {
+      "typ": "oauth-id-jag+jwt",
+      "alg": "ES256",
+      "kid": "idp-key-1"
+    }
+
+The decoded claims of the ID-JAG:
+
+    {
+      "iss": "https://idp.example.com",
+      "sub": "U019488227",
+      "aud": "https://as.example.net",
+      "client_id": "f53f191f9311af35",
+      "exp": 1793400300,
+      "iat": 1793400000,
+      "jti": "9a8b3cb8-7a1e-4d2c-8c5e-0f3e6a2c7b1d",
+      "cnf": {
+        "jkt": "GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA"
+      }
+    }
+
+The encoded and signed ID-JAG:
+
+    eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYiLCJraWQiOiJp
+    ZHAta2V5LTEifQ.
+    eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IlUwMTk0ODgy
+    MjciLCJhdWQiOiJodHRwczovL2FzLmV4YW1wbGUubmV0IiwiY2xpZW50X2lkIjoi
+    ZjUzZjE5MWY5MzExYWYzNSIsImV4cCI6MTc5MzQwMDMwMCwiaWF0IjoxNzkzNDAw
+    MDAwLCJqdGkiOiI5YThiM2NiOC03YTFlLTRkMmMtOGM1ZS0wZjNlNmEyYzdiMWQi
+    LCJjbmYiOnsiamt0IjoiR1hJRXM0dGhNLWNWWmtXN21VczktOVI3MzFEbUk3YWVl
+    QkZtNFZZQ01VQSJ9fQ.
+    c_PUFFNDDHvgWUxpCQ_jsiMaP4ZU0xXqkWFQ5lGHT_WYsjlAfOboUOSxuHR-_GjM
+    P3cSmUETAr_ux2ivS828xw
+
+## DPoP Proof
+
+The decoded JOSE header of the DPoP proof, which contains the client's
+public key:
+
+    {
+      "typ": "dpop+jwt",
+      "alg": "ES256",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "xSYHiPmBtVKQAzs79FRVe1dI7Y_Lu93I67WxbSsg9P0",
+        "y": "zHt5qFsvN2EYcSWf5hq1GqpcqmhONiB9W_YIgvsYqmQ"
+      }
+    }
+
+The decoded claims of the DPoP proof:
+
+    {
+      "jti": "e1j3V_bKic8-LAEB",
+      "htm": "POST",
+      "htu": "https://as.example.net/token",
+      "iat": 1793400005
+    }
+
+The encoded and signed DPoP proof:
+
+    eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVD
+    IiwiY3J2IjoiUC0yNTYiLCJ4IjoieFNZSGlQbUJ0VktRQXpzNzlGUlZlMWRJN1lf
+    THU5M0k2N1d4YlNzZzlQMCIsInkiOiJ6SHQ1cUZzdk4yRVljU1dmNWhxMUdxcGNx
+    bWhPTmlCOVdfWUlndnNZcW1RIn19.
+    eyJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIiwiaHRtIjoiUE9TVCIsImh0dSI6Imh0
+    dHBzOi8vYXMuZXhhbXBsZS5uZXQvdG9rZW4iLCJpYXQiOjE3OTM0MDAwMDV9.
+    S0ygnxypg5vIkyq7HCRz03MNafRa1Hk1NFsCGHbjFc4mrRQic9X7TpBxMy2C1BTT
+    6fjbCEFS5J_GJKuwdGxSZA
+
+## Thumbprint Comparison
+
+The authorization server constructs the canonical JWK of the public
+key in the `jwk` header of the DPoP proof, as described in
+{{Section 3 of RFC7638}}:
+
+    {"crv":"P-256","kty":"EC",
+    "x":"xSYHiPmBtVKQAzs79FRVe1dI7Y_Lu93I67WxbSsg9P0",
+    "y":"zHt5qFsvN2EYcSWf5hq1GqpcqmhONiB9W_YIgvsYqmQ"}
+
+The base64url-encoded SHA-256 hash of this value is:
+
+    GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA
+
+This matches the value of `cnf.jkt` in the ID-JAG, so the assertion
+is bound to the key used to sign the DPoP proof.
+
+## Access Token Request
+
+The resulting access token request:
+
+    POST /token HTTP/1.1
+    Host: as.example.net
+    Content-Type: application/x-www-form-urlencoded
+    DPoP:
+      eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVD
+      IiwiY3J2IjoiUC0yNTYiLCJ4IjoieFNZSGlQbUJ0VktRQXpzNzlGUlZlMWRJN1lf
+      THU5M0k2N1d4YlNzZzlQMCIsInkiOiJ6SHQ1cUZzdk4yRVljU1dmNWhxMUdxcGNx
+      bWhPTmlCOVdfWUlndnNZcW1RIn19.
+      eyJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIiwiaHRtIjoiUE9TVCIsImh0dSI6Imh0
+      dHBzOi8vYXMuZXhhbXBsZS5uZXQvdG9rZW4iLCJpYXQiOjE3OTM0MDAwMDV9.
+      S0ygnxypg5vIkyq7HCRz03MNafRa1Hk1NFsCGHbjFc4mrRQic9X7TpBxMy2C1BTT
+      6fjbCEFS5J_GJKuwdGxSZA
+
+    grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-dpop
+    &assertion=
+    eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYiLCJraWQiOiJp
+    ZHAta2V5LTEifQ.
+    eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IlUwMTk0ODgy
+    MjciLCJhdWQiOiJodHRwczovL2FzLmV4YW1wbGUubmV0IiwiY2xpZW50X2lkIjoi
+    ZjUzZjE5MWY5MzExYWYzNSIsImV4cCI6MTc5MzQwMDMwMCwiaWF0IjoxNzkzNDAw
+    MDAwLCJqdGkiOiI5YThiM2NiOC03YTFlLTRkMmMtOGM1ZS0wZjNlNmEyYzdiMWQi
+    LCJjbmYiOnsiamt0IjoiR1hJRXM0dGhNLWNWWmtXN21VczktOVI3MzFEbUk3YWVl
+    QkZtNFZZQ01VQSJ9fQ.
+    c_PUFFNDDHvgWUxpCQ_jsiMaP4ZU0xXqkWFQ5lGHT_WYsjlAfOboUOSxuHR-_GjM
+    P3cSmUETAr_ux2ivS828xw
+
 # Acknowledgments
 {:numbered="false"}
 
@@ -355,6 +499,7 @@ The authors would like to thank the following people for their contributions and
 * Moved Access Token Response to a top-level section.
 * Added a section describing requirements on the issuer of a DPoP-bound JWT assertion, with an example.
 * Added the Identity Assertion JWT Authorization Grant as a motivating use case.
+* Added a complete, verifiable example in an appendix.
 * Added guidance on DPoP nonces and replay detection, including not consuming the assertion on a nonce retry.
 * Clarified when bearer access tokens may be issued, and the binding of refresh tokens.
 * Added requirement to reject DPoP-bound JWT assertions presented with the `jwt-bearer` grant type, and security considerations for downgrade attacks.
