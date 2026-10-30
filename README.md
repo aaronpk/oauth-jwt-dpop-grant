@@ -1,8 +1,8 @@
 <!-- regenerate: on (set to off if you edit this file) -->
 
-# OAuth 2.0 JWT Authorization Grant with DPoP Token Binding
+# OAuth 2.0 JWT Authorization Grant with DPoP Binding
 
-This is the working area for the individual Internet-Draft, "OAuth 2.0 JWT Authorization Grant with DPoP Token Binding".
+This is the working area for the individual Internet-Draft, "OAuth 2.0 JWT Authorization Grant with DPoP Binding".
 
 * [Editor's Copy](https://drafts.aaronpk.com/oauth-jwt-dpop-grant/draft-parecki-oauth-jwt-dpop-grant.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-parecki-oauth-jwt-dpop-grant)

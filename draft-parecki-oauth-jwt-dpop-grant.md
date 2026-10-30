@@ -47,10 +47,11 @@ informative:
 --- abstract
 
 This specification defines a new OAuth 2.0 authorization grant type
-that uses a JSON Web Token (JWT) assertion to request an access token
-that is bound to a specific key using the Demonstration of Proof-of-Possession (DPoP)
-mechanism. This provides a higher level of security than a simple bearer token,
-as the client must prove possession of the key to use the access token.
+for exchanging a JSON Web Token (JWT) assertion that is bound to a key
+for an access token. To use the assertion, the client must prove
+possession of that key using the Demonstrating Proof of Possession (DPoP)
+mechanism. Unlike the JWT bearer grant, a stolen assertion cannot be
+used by a party that does not hold the private key.
 
 --- middle
 
@@ -62,10 +63,10 @@ authorization grant, using the grant type `urn:ietf:params:oauth:grant-type:jwt-
 This grant type describes the use of a JWT authorization grant as a
 bearer token, which is susceptible to reuse by any party that obtains one.
 
-OAuth 2.0 Demonstration of Proof-of-Possession at the Application
-Layer (DPoP) {{RFC9449}} defines a mechanism to bind access tokens to a
-specific cryptographic key. This prevents the token from being used by
-any party that does not have access to the private key.
+OAuth 2.0 Demonstrating Proof of Possession (DPoP) {{RFC9449}} defines
+a mechanism to bind access tokens to a specific cryptographic key.
+This prevents the token from being used by any party that does not
+have access to the private key.
 
 This specification extends the proof-of-possession concept to the
 authorization grant itself. It defines a new grant type,
@@ -83,17 +84,21 @@ JWT assertion a sender-constrained credential.
 
 This specification uses the terminology of {{RFC6749}}, {{RFC7521}}, {{RFC7523}}, and {{RFC9449}}.
 
+DPoP-bound JWT assertion:
+: A JWT assertion that contains a `cnf` claim with a `jkt` confirmation
+  method member identifying the public key to which the assertion is bound.
+
 # HTTP Parameter Bindings for Transporting Assertions
 
 The OAuth Assertion Framework {{RFC7521}} defines generic HTTP
 parameters for transporting assertions (a.k.a. security tokens)
 during interactions with a token endpoint.  This section defines
 specific parameters and treatments of those parameters for use with
-JWT DPoP-Bound Tokens.
+DPoP-bound JWT assertions.
 
-## Using DPoP-Bound JWTs as Authorization Grants
+## Using DPoP-Bound JWT Assertions as Authorization Grants
 
-To use a DPoP-bound JWT as an authorization grant, the client makes an
+To use a DPoP-bound JWT assertion as an authorization grant, the client makes an
 access token request as defined in {{Section 4 of RFC7521}}
 with the following specific parameter values and encodings.
 
@@ -102,7 +107,7 @@ with the following specific parameter values and encodings.
 
 `assertion`:
 : REQUIRED - A single JWT, as defined in {{RFC7519}}, that contains a
-  `cnf` claim as described in {{cnf}}.
+  `cnf` claim as described in {{processing}}.
 
 `scope`:
 : OPTIONAL - The `scope` parameter may be used, as defined in {{RFC7521}},
@@ -113,7 +118,7 @@ Authentication of the client is optional, as described in
 `client_id` is only needed when a form of client authentication that
 relies on the parameter is used.
 
-The client MUST also include a DPoP header as defined in {{Section 4 of RFC9449}},
+The client MUST also include a `DPoP` header field as defined in {{Section 4 of RFC9449}},
 which constitutes a proof of possession for the key to which the assertion is bound.
 
 The following example demonstrates an access token request with a JWT
@@ -130,16 +135,14 @@ purposes only):
     eyJpc3Mi[...omitted for brevity...].
     J9l-ZhwP[...omitted for brevity...]
 
-# JWT Format and Processing Requirements {#cnf}
+# JWT Format and Processing Requirements {#processing}
 
 The authorization server MUST validate the JWT according to the criteria
 below. Application of additional restrictions and policy are at the
 discretion of the authorization server.
 
-1. The authorization server MUST validate the DPoP proof in the DPoP
-   header as described in {{Section 4 of RFC9449}}. The `htm` claim
-   of the DPoP JWT MUST be `POST`, and the `htu` claim must match
-   the token endpoint URL.
+1. The authorization server MUST validate the DPoP proof in the `DPoP`
+   header field as described in {{Section 4.3 of RFC9449}}.
 2. The authorization server MUST validate the JWT assertion according
    to the processing rules in {{Section 3.1 of RFC7523}} and {{Section 4 of I-D.ietf-oauth-rfc7523bis}}.
 3. The authorization server MUST verify that the JWT assertion contains
@@ -153,17 +156,19 @@ discretion of the authorization server.
    compute the base64url-encoded JWK SHA-256 Thumbprint {{RFC7638}} of
    that public key, and compare it to the value of `cnf.jkt` in the assertion.
 
-If any of these validation steps fail, the authorization server MUST
+If the DPoP proof is missing or invalid (step 1), the authorization server
+MUST return an error response as described in {{Section 5 of RFC9449}}
+(e.g., `invalid_dpop_proof`, or `use_dpop_nonce` if a nonce is required).
+If any of the remaining validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
 
-## Access Token Response
+# Access Token Response
 
 If the request is valid, the authorization server issues an access
-token. The issued access token SHOULD also be DPoP-bound to the same
-key from the DPoP proof. In this case, the `token_type` of the access
-token MUST be `DPoP`, and the response MUST include a `token_type`
-parameter with the value `DPoP`. If a bearer token is issued, the
-`token_type` MUST be `Bearer`.
+token. The issued access token SHOULD be DPoP-bound to the same key
+as the DPoP proof, in which case the `token_type` in the response
+MUST be `DPoP` as described in {{Section 5 of RFC9449}}. If a bearer
+token is issued instead, the `token_type` MUST be `Bearer`.
 
 
 # Security Considerations
@@ -206,6 +211,10 @@ The authors would like to thank the following people for their contributions and
 
 -02
 
+* Rewrote the abstract to describe binding of the assertion rather than the access token.
+* Defined "DPoP-bound JWT assertion" and used the term consistently.
+* Use DPoP error codes for DPoP proof validation failures.
+* Moved Access Token Response to a top-level section.
 * Clarified that the DPoP proof's `jwk` is compared to `cnf.jkt` by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.
 
 -01
