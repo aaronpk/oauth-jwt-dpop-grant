@@ -35,6 +35,7 @@ normative:
   RFC7519:
   RFC7521:
   RFC7523:
+  RFC7638:
   RFC7800:
   I-D.ietf-oauth-rfc7523bis:
   RFC9449:
@@ -142,12 +143,15 @@ discretion of the authorization server.
 2. The authorization server MUST validate the JWT assertion according
    to the processing rules in {{Section 3.1 of RFC7523}} and {{Section 4 of I-D.ietf-oauth-rfc7523bis}}.
 3. The authorization server MUST verify that the JWT assertion contains
-   a `cnf` claim as defined in {{RFC7800}}. This `cnf`
-   claim MUST contain a `jkt` property with the hash of the public key
-   as defined in {{Section 6.1 of RFC9449}}.
-4. The authorization server MUST verify that the value of the the
-   `jkt` property of the `cnf` claim of the JWT assertion exactly
-   matches the value of the `jkt` in the DPoP proof.
+   a `cnf` claim as defined in {{RFC7800}}, and that the `cnf` claim
+   contains a `jkt` confirmation method member as defined in
+   {{Section 6.1 of RFC9449}}.
+4. The authorization server MUST verify that the public key in the `jwk`
+   JOSE Header Parameter of the DPoP proof matches the key to which the
+   JWT assertion is bound. This is done in the same way a resource server
+   verifies a DPoP-bound access token ({{Section 4.3 of RFC9449}}, check 12):
+   compute the base64url-encoded JWK SHA-256 Thumbprint {{RFC7638}} of
+   that public key, and compare it to the value of `cnf.jkt` in the assertion.
 
 If any of these validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
@@ -199,6 +203,10 @@ The authors would like to thank the following people for their contributions and
 {:numbered="false"}
 
 \[\[ To be removed from the final specification ]]
+
+-02
+
+* Clarified that the DPoP proof's `jwk` is compared to `cnf.jkt` by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.
 
 -01
 
