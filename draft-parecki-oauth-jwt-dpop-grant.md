@@ -221,6 +221,27 @@ MUST return an error response as described in {{Section 5 of RFC9449}}
 If any of the remaining validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
 
+## DPoP Nonces and Replay {#replay}
+
+The authorization server MAY require the client to include a nonce in
+the DPoP proof, as described in {{Section 8 of RFC9449}}. In that case
+the authorization server responds to a request without a valid nonce
+with a `use_dpop_nonce` error and a `DPoP-Nonce` header field, and the
+client retries the request with a new DPoP proof containing the
+provided nonce and the same assertion.
+
+The authorization server SHOULD perform replay detection on the `jti`
+claim of the DPoP proof, as described in {{Section 11.1 of RFC9449}}.
+The authorization server MAY also reject assertions whose `jti` has
+already been used, as described in {{Section 3 of RFC7523}}.
+
+If the authorization server records assertion `jti` values to detect
+replay, it MUST NOT record the assertion's `jti` as used when the request
+is rejected because of an invalid or missing DPoP proof or nonce.
+Otherwise a client following the nonce retry described above would have
+its assertion rejected as a replay. Performing the validation steps in
+the order given in {{processing}} achieves this.
+
 ## Use with the JWT Bearer Grant Type {#jwt-bearer}
 
 An authorization server that supports the grant type defined in this
@@ -237,10 +258,22 @@ value of its authorization server metadata {{RFC8414}}.
 # Access Token Response
 
 If the request is valid, the authorization server issues an access
-token. The issued access token SHOULD be DPoP-bound to the same key
-as the DPoP proof, in which case the `token_type` in the response
-MUST be `DPoP` as described in {{Section 5 of RFC9449}}. If a bearer
-token is issued instead, the `token_type` MUST be `Bearer`.
+token. The issued access token SHOULD be DPoP-bound to the key from the
+DPoP proof, which is the same key to which the assertion is bound. In
+this case the `token_type` in the response MUST be `DPoP`, as described
+in {{Section 5 of RFC9449}}.
+
+The authorization server MAY instead issue a bearer access token, for
+example when the protected resources for which the token is intended
+do not support DPoP. In this case the `token_type` MUST be `Bearer`. See
+{{bearer-access-tokens}} for the security implications.
+
+If the authorization server issues a refresh token, the refresh token
+is subject to the binding requirements of {{Section 5 of RFC9449}}: a
+refresh token issued to a public client MUST be bound to the key from
+the DPoP proof. The authorization server SHOULD NOT issue a refresh
+token whose lifetime extends beyond what is permitted by the policy
+under which the assertion was issued.
 
 
 # Security Considerations
@@ -279,6 +312,15 @@ specification, for example because the authorization server advertises
 metadata {{RFC8414}}, or by prior configuration.
 
 
+## Issuing Bearer Access Tokens {#bearer-access-tokens}
+
+When the authorization server issues a bearer access token in response
+to this grant, the protection provided by the DPoP binding ends at the
+token endpoint. The assertion cannot be used by a party that does not
+hold the private key, but the resulting access token can be used by any
+party that obtains it. Authorization servers SHOULD issue DPoP-bound
+access tokens whenever the intended protected resources support them.
+
 # IANA Considerations
 
 ## OAuth URI Registration
@@ -313,6 +355,8 @@ The authors would like to thank the following people for their contributions and
 * Moved Access Token Response to a top-level section.
 * Added a section describing requirements on the issuer of a DPoP-bound JWT assertion, with an example.
 * Added the Identity Assertion JWT Authorization Grant as a motivating use case.
+* Added guidance on DPoP nonces and replay detection, including not consuming the assertion on a nonce retry.
+* Clarified when bearer access tokens may be issued, and the binding of refresh tokens.
 * Added requirement to reject DPoP-bound JWT assertions presented with the `jwt-bearer` grant type, and security considerations for downgrade attacks.
 * Clarified that the DPoP proof's `jwk` is compared to `cnf.jkt` by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.
 
