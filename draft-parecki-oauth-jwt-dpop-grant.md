@@ -322,6 +322,30 @@ hold the private key, but the resulting access token can be used by any
 party that obtains it. Authorization servers SHOULD issue DPoP-bound
 access tokens whenever the intended protected resources support them.
 
+# Privacy Considerations
+
+The `jkt` value in a DPoP-bound JWT assertion is a stable identifier of
+the client's key. When a client uses the same key with an identity
+provider, with one or more authorization servers, and with the protected
+resources to which DPoP-bound access tokens are presented, each of these
+parties observes the same key, either in DPoP proofs or as `cnf.jkt` in
+assertions and access tokens. Colluding parties could use this to
+correlate the client's activity across them, beyond what is already
+possible from the identity of the client or the user.
+
+To limit this, a client MAY use a different DPoP key for each
+authorization server at which it presents DPoP-bound JWT assertions.
+Since the assertion is bound to the key used when requesting it (see
+{{issuance}}), the client needs to choose the key it will use at the
+target authorization server before requesting the assertion. A client
+SHOULD NOT reuse a DPoP key across unrelated users or sessions where
+doing so would let those otherwise unlinked activities be correlated.
+
+This specification does not change the claims about the user that are
+conveyed in the assertion, and the privacy considerations of the
+specification defining the assertion, such as
+{{I-D.ietf-oauth-identity-assertion-authz-grant}}, continue to apply.
+
 # IANA Considerations
 
 ## OAuth URI Registration
@@ -499,6 +523,7 @@ The authors would like to thank the following people for their contributions and
 * Moved Access Token Response to a top-level section.
 * Added a section describing requirements on the issuer of a DPoP-bound JWT assertion, with an example.
 * Added the Identity Assertion JWT Authorization Grant as a motivating use case.
+* Added Privacy Considerations.
 * Added a complete, verifiable example in an appendix.
 * Added guidance on DPoP nonces and replay detection, including not consuming the assertion on a nonce retry.
 * Clarified when bearer access tokens may be issued, and the binding of refresh tokens.
