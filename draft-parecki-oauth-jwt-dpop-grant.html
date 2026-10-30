@@ -8,29 +8,31 @@
 <meta content="Aaron Parecki" name="author">
 <meta content="
        This specification defines a new OAuth 2.0 authorization grant type
-that uses a JSON Web Token (JWT) assertion to request an access token
-that is bound to a specific key using the Demonstration of Proof-of-Possession (DPoP)
-mechanism. This provides a higher level of security than a simple bearer token,
-as the client must prove possession of the key to use the access token. 
+for exchanging a JSON Web Token (JWT) assertion that is bound to a key
+for an access token. To use the assertion, the client must prove
+possession of that key using the Demonstrating Proof of Possession (DPoP)
+mechanism. Unlike the JWT bearer grant, a stolen assertion cannot be
+used by a party that does not hold the private key. 
     " name="description">
-<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="xml2rfc 3.34.1" name="generator">
 <meta content="jwt" name="keyword">
 <meta content="dpop" name="keyword">
 <meta content="authorization" name="keyword">
 <meta content="draft-parecki-oauth-jwt-dpop-grant-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.31.0
-    Python 3.12.12
-    ConfigArgParse 1.7
+  xml2rfc 3.34.1
+    Python 3.14.8
+    ConfigArgParse 1.8.0
     google-i18n-address 3.1.1
     intervaltree 3.2.1
     Jinja2 3.1.6
-    lxml 6.0.2
-    platformdirs 4.5.1
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.13.4
     pycountry 24.6.1
     PyYAML 6.0.3
-    requests 2.32.5
-    wcwidth 0.3.0
+    requests 2.33.1
+    wcwidth 0.9.2
 -->
 <link href="draft-parecki-oauth-jwt-dpop-grant.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -66,7 +68,6 @@ as the client must prove possession of the key to use the access token.
   src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
-
 @font-face {
   font-family: 'Lora';
   font-style: italic;
@@ -115,7 +116,6 @@ as the client must prove possession of the key to use the access token.
   src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
 @font-face {
   font-family: 'Lora';
   font-style: normal;
@@ -171,7 +171,7 @@ as the client must prove possession of the key to use the access token.
   font-weight: 400;
   font-display: swap;
   src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: 'Oxygen Mono';
@@ -179,7 +179,7 @@ as the client must prove possession of the key to use the access token.
   font-weight: 400;
   font-display: swap;
   src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -296,16 +296,19 @@ h1, h2, h3, h4, h5, h6 {
   font-size-adjust: 0.5;
   color: var(--title-color);
 }
-h1#title {
-  font-size: 32px;
-  line-height: 40px;
-  clear: both;
-}
-h1#title, h1#rfcnum {
-  margin: 1.5em 0 0.2em;
-}
-h1#rfcnum + h1#title {
-  margin: 0.2em 0;
+h1 {
+  &#title {
+    font-size: 32px;
+    line-height: 40px;
+    clear: both;
+    margin: 1.5em 0 0.2em;
+  }
+  &#rfcnum {
+    margin: 1.5em 0 0.2em;
+    & + h1#title {
+      margin: 0.2em 0;
+    }
+  }
 }
 
 h1, h2, h3 {
@@ -325,10 +328,10 @@ h4, h5, h6 {
 #abstract+p {
   font-size: 18px;
   line-height: 24px;
-}
-#abstract+p code, #abstract+p samp, #abstract+p tt {
-  font-size: 16px;
-  line-height: 0;
+  & code, & samp, & tt {
+    font-size: 16px;
+    line-height: 0;
+  }
 }
 
 p {
@@ -339,59 +342,59 @@ p {
 div {
   margin: 0;
 }
-.alignRight.art-text {
-  background-color: var(--highlight-color);
-  border: 1px solid var(--line-color);
-  border-radius: 3px;
-  padding: 0.5em 1em 0;
-  margin-bottom: 0.5em;
-}
-.alignRight.art-text pre {
-  padding: 0;
-  width: auto;
-}
 .alignRight {
   margin: 1em 0;
-}
-.alignRight > *:first-child {
-  border: none;
-  margin: 0;
-  float: right;
-  clear: both;
-}
-.alignRight > *:nth-child(2) {
-  clear: both;
-  display: block;
-  border: none;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    margin: 0;
+    float: right;
+    clear: both;
+  }
+  & > *:nth-child(2) {
+    clear: both;
+    display: block;
+    border: none;
+  }
 }
 svg {
   display: block;
-}
-/* font-family isn't space-separated, but =~ will have to do */
-svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
-  font-family: var(--font-mono);
-}
-.alignCenter.art-text {
-  background-color: var(--highlight-color);
-  border: 1px solid var(--line-color);
-  border-radius: 3px;
-  padding: 0.5em 1em 0;
-  margin-bottom: 0.5em;
-}
-.alignCenter.art-text pre {
-  padding: 0;
-  width: auto;
+  /* font-family isn't space-separated, but =~ will have to do */
+  &[font-family~="monospace" i], & [font-family~="monospace" i] {
+    font-family: var(--font-mono);
+  }
 }
 .alignCenter {
   margin: 1em 0;
-}
-.alignCenter > *:first-child {
-  border: none;
-  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
-     support flexbox yet.
-  */
-  display: table;
-  margin: 0 auto;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+       support flexbox yet.
+    */
+    display: table;
+    margin: 0 auto;
+  }
 }
 
 /* lists */
@@ -429,26 +432,25 @@ dl {
     --indent: 5ch;
     & > dt {
       min-width: calc(var(--indent) - 2ch);
+      float: none;
     }
-  }
-  &.olPercent > dt {
-    float: none;
   }
 
   dl > dd > & {
     margin-top: 0.5em;
     margin-bottom: 0;
   }
-}
-dl:not(.dlNewline) > dt {
-  float: left;
-  margin-right: 2ch;
-  min-width: 8ch;
-}
-dl > dd {
-  margin-bottom: .8em;
-  margin-left: var(--indent) !important; /* stupid element overrides */
-  min-height: 2ex;
+
+  &:not(.dlNewline) > dt {
+    float: left;
+    margin-right: 2ch;
+    min-width: 8ch;
+  }
+  & > dd {
+    margin-bottom: .8em;
+    margin-left: var(--indent) !important; /* stupid element overrides */
+    min-height: 2ex;
+  }
 }
 :is(dl.compact, .dlCompact) > dd {
   margin-bottom: 0;
@@ -464,20 +466,22 @@ dl > dd {
 }
 
 /* links */
-a, a[href].selfRef:hover {
+a {
   text-decoration: none;
+  &[href] {
+    color: var(--link-color);
+    &:hover { text-decoration: underline; }
+    &.selfRef {
+      color: var(--text-color);
+      &:hover {
+        text-decoration: none;
+        background-color: var(--highlight-color);
+      }
+    }
+  }
 }
-a[href] {
-  color: var(--link-color);
-}
-a[href].selfRef, .iref + a[href].internal {
+.iref + a[href].internal {
   color: var(--text-color);
-}
-a[href]:hover {
-  text-decoration: underline;
-}
-a[href].selfRef:hover {
-  background-color: var(--highlight-color);
 }
 a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
   white-space: nowrap;
@@ -513,9 +517,9 @@ img {
 figure {
   margin: 0.5em 0;
   padding: 0;
-}
-figure blockquote {
-  margin: 0.8em 0.4em 0.4em;
+  & blockquote {
+    margin: 0.8em 0.4em 0.4em;
+  }
 }
 figcaption, caption {
   font-style: italic;
@@ -525,17 +529,19 @@ figcaption, caption {
 }
 @media screen {
   /* Auto-collapse boilerplate. */
-  :is(#status-of-memo, #copyright) p {
-    margin: -2px 0;
-    max-height: 0;
-    transition: max-height 2s ease, margin 0.5s ease 0.5s;
-    overflow: hidden;
-  }
-  :is(#status-of-memo, #copyright):hover p,
-  :is(#status-of-memo, #copyright) h2:target ~ p {
-    margin: 0.5em 0;
-    max-height: 500px;
-    overflow: auto;
+  :is(#status-of-memo, #copyright) {
+    & p {
+      margin: -2px 0;
+      max-height: 0;
+      transition: max-height 2s ease, margin 0.5s ease 0.5s;
+      overflow: hidden;
+    }
+    &:hover p,
+    & h2:target ~ p {
+      margin: 0.5em 0;
+      max-height: 500px;
+      overflow: auto;
+    }
   }
   pre, svg {
     display: inline-block;
@@ -585,25 +591,17 @@ table {
   max-width: 100%;
   margin: 0 0 1em;
   border-collapse: collapse;
-}
-table.right {
-  margin-left: auto;
-}
-table.center {
-  margin-left: auto;
-  margin-right: auto;
-}
-table.left {
-  margin-right: auto;
-}
-table .text-left {
-  text-align: left;
-}
-table .text-center {
-  text-align: center;
-}
-table .text-right {
-  text-align: right;
+  &.right { margin-left: auto; }
+  &.center { margin-left: auto; margin-right: auto; }
+  &.left { margin-right: auto; }
+  & .text-left { text-align: left; }
+  & .text-center { text-align: center; }
+  & .text-right { text-align: right; }
+  & caption {
+    margin: 0;
+    padding: 3px 0 3px 1em;
+  }
+  & p { margin: 0; }
 }
 
 thead, tbody {
@@ -623,13 +621,6 @@ th {
 :is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
   background-color: var(--highlight-color);
 }
-table caption {
-  margin: 0;
-  padding: 3px 0 3px 1em;
-}
-table p {
-  margin: 0;
-}
 
 /* pilcrow */
 a.pilcrow {
@@ -640,18 +631,16 @@ a.pilcrow {
     color: var(--pilcrow-weak);
     &:hover { text-decoration: none; }
   }
-}
-@media not print {
-  :hover > a.pilcrow, a.pilcrow:focus {
-    opacity: 1;
+  @media not print {
+    :hover > &, &:focus {
+      opacity: 1;
+    }
+    &[href]:hover {
+      color: var(--pilcrow-strong);
+      background-color: transparent;
+    }
   }
-  a.pilcrow[href]:hover {
-    color: var(--pilcrow-strong);
-    background-color: transparent;
-  }
-}
-@media print {
-  a.pilcrow {
+  @media print {
     display: none;
   }
 }
@@ -710,9 +699,9 @@ sub, sup {
   font-size: 0.9em;
   font-style: italic;
   margin-top: 2em;
-}
-.docInfo .prepared {
-  float: right;
+  & .prepared {
+    float: right;
+  }
 }
 
 /* table of contents */
@@ -802,23 +791,27 @@ hr.addr {
   max-width: calc(100% - 16px);
 }
 @media (min-width: 500px) {
-  #authors-addresses > section {
-    column-count: 2;
-    column-gap: 20px;
-  }
-  #authors-addresses > section > h2 {
-    column-span: all;
-  }
-  /* hack for break-inside: avoid-column */
-  #authors-addresses address {
-    display: inline-block;
-    break-inside: avoid-column;
+  #authors-addresses {
+    & > section {
+      column-count: 2;
+      column-gap: 20px;
+    }
+    & > section > h2 {
+      column-span: all;
+    }
+    /* hack for break-inside: avoid-column */
+    & address {
+      display: inline-block;
+      break-inside: avoid-column;
+    }
   }
 }
 
 /* Comments */
-.rfcEditorRemove p:first-of-type {
-  font-style: italic;
+.rfcEditorRemove {
+  & p:first-of-type {
+    font-style: italic;
+  }
 }
 .cref {
   background-color: rgba(249, 232, 105, 0.3);
@@ -829,19 +822,21 @@ hr.addr {
 }
 
 @media screen {
-  #toc nav {
-    font-family: var(--font-title);
-    font-weight: 360;
-    & > ul { margin-bottom: 2em; }
-    & ul {
-      margin: 0 0 0 4px;
-      & :is(p, li) {
-        margin: 2px 0;
+  #toc {
+    & nav {
+      font-family: var(--font-title);
+      font-weight: 360;
+      & > ul { margin-bottom: 2em; }
+      & ul {
+        margin: 0 0 0 4px;
+        & :is(p, li) {
+          margin: 2px 0;
+        }
       }
     }
-  }
-  #toc a.toplink {
-    float: right;
+    & a.toplink {
+      float: right;
+    }
   }
 }
 @media not screen {
@@ -862,54 +857,54 @@ hr.addr {
     margin: 0;
     border-bottom: 1px solid #ccc;
     opacity: 0.6;
-  }
-  #toc h2 {
-    margin: 0;
-    padding: 2px 0 2px 6px;
-    padding-right: 1em;
-    font-size: 18px;
-    line-height: 24px;
-    min-width: 190px;
-    text-align: right;
-    background-color: #444;
-    color: white;
-    cursor: pointer;
-    &::before { /* css hamburger */
-      float: right;
-      position: relative;
-      width: 1em;
-      height: 1px;
-      left: -164px;
-      margin: 8px 0 0 0;
-      background: white none repeat scroll 0 0;
-      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
-      content: "";
+    & h2 {
+      margin: 0;
+      padding: 2px 0 2px 6px;
+      padding-right: 1em;
+      font-size: 18px;
+      line-height: 24px;
+      min-width: 190px;
+      text-align: right;
+      background-color: #444;
+      color: white;
+      cursor: pointer;
+      &::before { /* css hamburger */
+        float: right;
+        position: relative;
+        width: 1em;
+        height: 1px;
+        left: -164px;
+        margin: 8px 0 0 0;
+        background: white none repeat scroll 0 0;
+        box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+        content: "";
+      }
     }
-  }
-  #toc nav {
-    display: none;
-    background-color: var(--background-color);
-    padding: 0.5em 1em 1em;
-    overflow: auto;
-    overscroll-behavior: contain;
-    height: calc(100vh - 48px);
-    border-left: 1px solid #ddd;
-  }
-  #toc.active {
-    opacity: 1;
-    & nav { display: block; }
-  }
-  /* Make the collapsed ToC header render white on gray also when it's a link */
-  #toc h2 a,
-  #toc h2 a:is(:link, :focus, :hover),
-  #toc a.toplink,
-  #toc a.toplink:hover {
-    color: white;
-    background-color: #444;
-    text-decoration: none;
-  }
-  #toc a.toplink {
-    margin: 2px 0.5em 0;
+    & nav {
+      display: none;
+      background-color: var(--background-color);
+      padding: 0.5em 1em 1em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      height: calc(100vh - 48px);
+      border-left: 1px solid #ddd;
+    }
+    &.active {
+      opacity: 1;
+      & nav { display: block; }
+    }
+    /* Make the collapsed ToC header render white on gray also when it's a link */
+    & h2 a,
+    & h2 a:is(:link, :focus, :hover),
+    & a.toplink,
+    & a.toplink:hover {
+      color: white;
+      background-color: #444;
+      text-decoration: none;
+    }
+    & a.toplink {
+      margin: 2px 0.5em 0;
+    }
   }
 }
 
@@ -928,26 +923,26 @@ hr.addr {
     margin: 0;
     padding: 0;
     z-index: 1;
-  }
-  #toc h2 {
-    margin: 0;
-    padding: 0.25em 1em 1em 0;
-  }
-  #toc nav {
-    display: block;
-    height: calc(90vh - 84px);
-    bottom: 0;
-    padding: 0.5em 0 2em;
-    overflow: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
+    & h2 {
+      margin: 0;
+      padding: 0.25em 1em 1em 0;
+    }
+    & nav {
+      display: block;
+      height: calc(90vh - 84px);
+      bottom: 0;
+      padding: 0.5em 0 2em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    & a.toplink {
+      margin: 8px 0.5em 0;
+    }
   }
   img { /* future proofing */
     max-width: 100%;
     height: auto;
-  }
-  #toc a.toplink {
-    margin: 8px 0.5em 0;
   }
 }
 
@@ -963,12 +958,13 @@ hr.addr {
   #n-copyright-notice {
     border-bottom: none;
   }
-  #toc, #n-introduction {
-    page-break-before: always;
-  }
   #toc {
+    page-break-before: always;
     border-top: none;
     padding-top: 0;
+  }
+  #n-introduction {
+    page-break-before: always;
   }
   figure, pre, .vcard {
     page-break-inside: avoid;
@@ -1030,17 +1026,19 @@ hr.addr {
 }
 
 /* SVG Trick: a prefix match works because only black and white are allowed */
-svg :is([stroke="black"], [stroke^="#000"]) {
-  stroke: var(--text-color);
-}
-svg :is([stroke="white"], [stroke^="#fff"]) {
-  stroke: var(--background-color);
-}
-svg :is([fill="black"], [fill^="#000"], :not([fill])) {
-  fill: var(--text-color);
-}
-svg :is([fill="white"], [fill^="#fff"]) {
-  fill: var(--background-color);
+svg {
+  & :is([stroke="black"], [stroke^="#000"]) {
+    stroke: var(--text-color);
+  }
+  & :is([stroke="white"], [stroke^="#fff"]) {
+    stroke: var(--background-color);
+  }
+  & :is([fill="black"], [fill^="#000"], :not([fill])) {
+    fill: var(--text-color);
+  }
+  & :is([fill="white"], [fill^="#fff"]) {
+    fill: var(--background-color);
+  }
 }
 </style>
 
@@ -1050,11 +1048,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">JWT Authorization Grant with DPoP</td>
-<td class="right">January 2026</td>
+<td class="right">October 2026</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Parecki</td>
-<td class="center">Expires 3 August 2026</td>
+<td class="center">Expires 3 May 2027</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1067,12 +1065,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-parecki-oauth-jwt-dpop-grant-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-01-30" class="published">30 January 2026</time>
+<time datetime="2026-10-30" class="published">30 October 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-08-03">3 August 2026</time></dd>
+<dd class="expires"><time datetime="2027-05-03">3 May 2027</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1086,10 +1084,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
 <p id="section-abstract-1">This specification defines a new OAuth 2.0 authorization grant type
-that uses a JSON Web Token (JWT) assertion to request an access token
-that is bound to a specific key using the Demonstration of Proof-of-Possession (DPoP)
-mechanism. This provides a higher level of security than a simple bearer token,
-as the client must prove possession of the key to use the access token.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+for exchanging a JSON Web Token (JWT) assertion that is bound to a key
+for an access token. To use the assertion, the client must prove
+possession of that key using the Demonstrating Proof of Possession (DPoP)
+mechanism. Unlike the JWT bearer grant, a stolen assertion cannot be
+used by a party that does not hold the private key.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note rfcEditorRemove" id="section-note.1">
       <h2 id="name-about-this-document">
@@ -1126,7 +1125,7 @@ as the client must prove possession of the key to use the access token.<a href="
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 3 August 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 3 May 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1167,43 +1166,91 @@ as the client must prove possession of the key to use the access token.<a href="
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-http-parameter-bindings-for" class="internal xref">HTTP Parameter Bindings for Transporting Assertions</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
-                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-using-dpop-bound-jwts-as-au" class="internal xref">Using DPoP-Bound JWTs as Authorization Grants</a></p>
-</li>
-            </ul>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-obtaining-a-dpop-bound-jwt-" class="internal xref">Obtaining a DPoP-Bound JWT Assertion</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-jwt-format-and-processing-r" class="internal xref">JWT Format and Processing Requirements</a></p>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-http-parameter-bindings-for" class="internal xref">HTTP Parameter Bindings for Transporting Assertions</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
-                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-access-token-response" class="internal xref">Access Token Response</a></p>
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-using-dpop-bound-jwt-assert" class="internal xref">Using DPoP-Bound JWT Assertions as Authorization Grants</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-jwt-format-and-processing-r" class="internal xref">JWT Format and Processing Requirements</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
-                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-oauth-uri-registration" class="internal xref">OAuth URI Registration</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-dpop-nonces-and-replay" class="internal xref">DPoP Nonces and Replay</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-use-with-the-jwt-bearer-gra" class="internal xref">Use with the JWT Bearer Grant Type</a></p>
 </li>
             </ul>
 </li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-access-token-response" class="internal xref">Access Token Response</a></p>
+</li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-downgrade-to-the-jwt-bearer" class="internal xref">Downgrade to the JWT Bearer Grant</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-issuing-bearer-access-token" class="internal xref">Issuing Bearer Access Tokens</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-document-history" class="internal xref">Document History</a></p>
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-oauth-uri-registration" class="internal xref">OAuth URI Registration</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
-            <p id="section-toc.1-1.10.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-complete-example" class="internal xref">Complete Example</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-identity-provider-key" class="internal xref">Identity Provider Key</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-dpop-bound-jwt-assertion" class="internal xref">DPoP-Bound JWT Assertion</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-dpop-proof" class="internal xref">DPoP Proof</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4">
+                <p id="section-toc.1-1.11.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-thumbprint-comparison" class="internal xref">Thumbprint Comparison</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.5">
+                <p id="section-toc.1-1.11.2.5.1"><a href="#appendix-A.5" class="auto internal xref">A.5</a>.  <a href="#name-access-token-request" class="internal xref">Access Token Request</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-document-history" class="internal xref">Document History</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
 </li>
         </ul>
 </nav>
@@ -1219,10 +1266,10 @@ and Authorization Grants <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>
 authorization grant, using the grant type <code>urn:ietf:params:oauth:grant-type:jwt-bearer</code>.
 This grant type describes the use of a JWT authorization grant as a
 bearer token, which is susceptible to reuse by any party that obtains one.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">OAuth 2.0 Demonstration of Proof-of-Possession at the Application
-Layer (DPoP) <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span> defines a mechanism to bind access tokens to a
-specific cryptographic key. This prevents the token from being used by
-any party that does not have access to the private key.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-2">OAuth 2.0 Demonstrating Proof of Possession (DPoP) <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span> defines
+a mechanism to bind access tokens to a specific cryptographic key.
+This prevents the token from being used by any party that does not
+have access to the private key.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">This specification extends the proof-of-possession concept to the
 authorization grant itself. It defines a new grant type,
 <code>urn:ietf:params:oauth:grant-type:jwt-dpop</code>, for cases where the JWT
@@ -1230,6 +1277,14 @@ assertion is already bound to a DPoP key. To exchange the assertion
 for an access token, the client must provide a DPoP proof demonstrating
 possession of the key to which the assertion is bound. This makes the
 JWT assertion a sender-constrained credential.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">A motivating use case is the Identity Assertion JWT Authorization Grant
+<span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>, in which a client
+obtains a JWT assertion from an identity provider, typically using
+Token Exchange <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>, and presents it to the authorization server
+of a different trust domain. Binding that assertion to a DPoP key
+prevents it from being used by any party other than the client that
+requested it, and allows the resulting access token to be bound to the
+same key.<a href="#section-1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="conventions-and-definitions">
@@ -1247,242 +1302,696 @@ appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶<
 <a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
         </h3>
 <p id="section-2.1-1">This specification uses the terminology of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>, <span>[<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>, <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>, and <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2.1-2">
+          <dt id="section-2.1-2.1">DPoP-bound JWT assertion:</dt>
+          <dd style="margin-left: 1.5em" id="section-2.1-2.2">
+            <p id="section-2.1-2.2.1">A JWT assertion that contains a <code>cnf</code> claim with a <code>jkt</code> confirmation
+method member identifying the public key to which the assertion is bound.<a href="#section-2.1-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
 </section>
+</div>
+</section>
+</div>
+<div id="issuance">
+<section id="section-3">
+      <h2 id="name-obtaining-a-dpop-bound-jwt-">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-obtaining-a-dpop-bound-jwt-" class="section-name selfRef">Obtaining a DPoP-Bound JWT Assertion</a>
+      </h2>
+<p id="section-3-1">This specification does not define how a client obtains a DPoP-bound
+JWT assertion. Any mechanism may be used, provided that the issuer of
+the assertion binds it to a key controlled by the client. This section
+describes requirements on the issuer, and one way of meeting them.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">The issuer of a DPoP-bound JWT assertion:<a href="#section-3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3-3.1">
+          <p id="section-3-3.1.1"><span class="bcp14">MUST</span> include a <code>cnf</code> claim containing a <code>jkt</code> confirmation method
+member, whose value is the JWK SHA-256 Thumbprint <span>[<a href="#RFC7638" class="cite xref">RFC7638</a>]</span> of the
+client's public key, as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.2">
+          <p id="section-3-3.2.1"><span class="bcp14">SHOULD</span> verify that the client possesses the private key corresponding
+to that public key before issuing the assertion.<a href="#section-3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.3">
+          <p id="section-3-3.3.1"><span class="bcp14">MUST NOT</span> include more than one <code>jkt</code> value, or any other confirmation
+method member alongside <code>jkt</code>.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-3-4">When the assertion is obtained from an OAuth token endpoint, such as by
+Token Exchange <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>, the client can demonstrate possession of the
+key by including a <code>DPoP</code> header field in that request, as defined in
+<span><a href="https://rfc-editor.org/rfc/rfc9449#section-5" class="relref">Section 5</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>. The issuer validates the DPoP proof and uses
+the thumbprint of the public key in the proof as the value of
+<code>cnf.jkt</code> in the issued assertion. The client then uses the same key
+when presenting the assertion as described in <a href="#parameters" class="auto internal xref">Section 4.1</a>.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">For example, when obtaining an Identity Assertion JWT Authorization
+Grant (ID-JAG) as described in <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>,
+the client includes a <code>DPoP</code> header field in the Token Exchange request
+to the identity provider, and the identity provider includes the
+resulting <code>cnf.jkt</code> value in the issued ID-JAG.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">The following non-normative example shows the decoded claims of a
+DPoP-bound ID-JAG:<a href="#section-3-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3-7">
+<pre>
+{
+  "iss": "https://idp.example.com",
+  "sub": "U019488227",
+  "aud": "https://as.example.net",
+  "client_id": "f53f191f9311af35",
+  "exp": 1793400300,
+  "iat": 1793400000,
+  "jti": "9a8b3cb8-7a1e-4d2c-8c5e-0f3e6a2c7b1d",
+  "cnf": {
+    "jkt": "GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA"
+  }
+}
+</pre><a href="#section-3-7" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
 <div id="http-parameter-bindings-for-transporting-assertions">
-<section id="section-3">
+<section id="section-4">
       <h2 id="name-http-parameter-bindings-for">
-<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-http-parameter-bindings-for" class="section-name selfRef">HTTP Parameter Bindings for Transporting Assertions</a>
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-http-parameter-bindings-for" class="section-name selfRef">HTTP Parameter Bindings for Transporting Assertions</a>
       </h2>
-<p id="section-3-1">The OAuth Assertion Framework <span>[<a href="#RFC7521" class="cite xref">RFC7521</a>]</span> defines generic HTTP
+<p id="section-4-1">The OAuth Assertion Framework <span>[<a href="#RFC7521" class="cite xref">RFC7521</a>]</span> defines generic HTTP
 parameters for transporting assertions (a.k.a. security tokens)
 during interactions with a token endpoint.  This section defines
 specific parameters and treatments of those parameters for use with
-JWT DPoP-Bound Tokens.<a href="#section-3-1" class="pilcrow">¶</a></p>
-<div id="using-dpop-bound-jwts-as-authorization-grants">
-<section id="section-3.1">
-        <h3 id="name-using-dpop-bound-jwts-as-au">
-<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-using-dpop-bound-jwts-as-au" class="section-name selfRef">Using DPoP-Bound JWTs as Authorization Grants</a>
+DPoP-bound JWT assertions.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="parameters">
+<section id="section-4.1">
+        <h3 id="name-using-dpop-bound-jwt-assert">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-using-dpop-bound-jwt-assert" class="section-name selfRef">Using DPoP-Bound JWT Assertions as Authorization Grants</a>
         </h3>
-<p id="section-3.1-1">To use a DPoP-bound JWT as an authorization grant, the client makes an
-access token request as defined in <span><a href="https://rfc-editor.org/rfc/rfc7521#section-4" class="relref">Section 4</a> of [<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>
-with the following specific parameter values and encodings.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-3.1-2">
-          <dt id="section-3.1-2.1">
+<p id="section-4.1-1">To use a DPoP-bound JWT assertion as an authorization grant, the client makes an
+access token request as defined in <span><a href="https://rfc-editor.org/rfc/rfc7521#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>
+with the following specific parameter values and encodings.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.1-2">
+          <dt id="section-4.1-2.1">
 <code>grant_type</code>:</dt>
-          <dd style="margin-left: 1.5em" id="section-3.1-2.2">
-            <p id="section-3.1-2.2.1"><span class="bcp14">REQUIRED</span> - The value <span class="bcp14">MUST</span> be <code>urn:ietf:params:oauth:grant-type:jwt-dpop</code><a href="#section-3.1-2.2.1" class="pilcrow">¶</a></p>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.2">
+            <p id="section-4.1-2.2.1"><span class="bcp14">REQUIRED</span> - The value <span class="bcp14">MUST</span> be <code>urn:ietf:params:oauth:grant-type:jwt-dpop</code><a href="#section-4.1-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-3.1-2.3">
+<dt id="section-4.1-2.3">
 <code>assertion</code>:</dt>
-          <dd style="margin-left: 1.5em" id="section-3.1-2.4">
-            <p id="section-3.1-2.4.1"><span class="bcp14">REQUIRED</span> - A single JWT, as defined in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>, that contains a
-<code>cnf</code> claim as described in <a href="#cnf" class="auto internal xref">Section 4</a>.<a href="#section-3.1-2.4.1" class="pilcrow">¶</a></p>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.4">
+            <p id="section-4.1-2.4.1"><span class="bcp14">REQUIRED</span> - A single JWT, as defined in <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>, that contains a
+<code>cnf</code> claim as described in <a href="#processing" class="auto internal xref">Section 5</a>.<a href="#section-4.1-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-3.1-2.5">
+<dt id="section-4.1-2.5">
 <code>scope</code>:</dt>
-          <dd style="margin-left: 1.5em" id="section-3.1-2.6">
-            <p id="section-3.1-2.6.1"><span class="bcp14">OPTIONAL</span> - The <code>scope</code> parameter may be used, as defined in <span>[<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>,
-to indicate the requested scope.<a href="#section-3.1-2.6.1" class="pilcrow">¶</a></p>
+          <dd style="margin-left: 1.5em" id="section-4.1-2.6">
+            <p id="section-4.1-2.6.1"><span class="bcp14">OPTIONAL</span> - The <code>scope</code> parameter may be used, as defined in <span><a href="https://rfc-editor.org/rfc/rfc7521#section-4.1" class="relref">Section 4.1</a> of [<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>,
+to indicate the requested scope.<a href="#section-4.1-2.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
-<p id="section-3.1-3">Authentication of the client is optional, as described in
+<p id="section-4.1-3">Authentication of the client is optional, as described in
 <span><a href="https://rfc-editor.org/rfc/rfc6749#section-3.2.1" class="relref">Section 3.2.1</a> of [<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> and consequently, the
 <code>client_id</code> is only needed when a form of client authentication that
-relies on the parameter is used.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
-<p id="section-3.1-4">The client <span class="bcp14">MUST</span> also include a DPoP header as defined in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-4" class="relref">Section 4</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>,
-which constitutes a proof of possession for the key to which the assertion is bound.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
-<p id="section-3.1-5">The following example demonstrates an access token request with a JWT
-as an authorization grant (with extra line breaks for display
-purposes only):<a href="#section-3.1-5" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-3.1-6">
+relies on the parameter is used.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">The client <span class="bcp14">MUST</span> also include a <code>DPoP</code> header field as defined in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-4" class="relref">Section 4</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>,
+which constitutes a proof of possession for the key to which the assertion is bound.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1-5">The following example demonstrates an access token request with a
+DPoP-bound JWT assertion as an authorization grant (with extra line
+breaks for display purposes only). The complete request, with decoded
+values, is shown in <a href="#complete-example" class="auto internal xref">Appendix A</a>.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-6">
 <pre>
 POST /token HTTP/1.1
-Host: as.example.com
+Host: as.example.net
 Content-Type: application/x-www-form-urlencoded
-DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrI...
+DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6
+  [...omitted for brevity...]
 
 grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-dpop
-&amp;assertion=eyJhbGciOiJFUzI1NiIsImtpZCI6IjE2In0.
-eyJpc3Mi[...omitted for brevity...].
-J9l-ZhwP[...omitted for brevity...]
-</pre><a href="#section-3.1-6" class="pilcrow">¶</a>
+&amp;assertion=eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYi
+[...omitted for brevity...]
+</pre><a href="#section-4.1-6" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
 </section>
 </div>
-<div id="cnf">
-<section id="section-4">
+<div id="processing">
+<section id="section-5">
       <h2 id="name-jwt-format-and-processing-r">
-<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-jwt-format-and-processing-r" class="section-name selfRef">JWT Format and Processing Requirements</a>
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-jwt-format-and-processing-r" class="section-name selfRef">JWT Format and Processing Requirements</a>
       </h2>
-<p id="section-4-1">The authorization server <span class="bcp14">MUST</span> validate the JWT according to the criteria
+<p id="section-5-1">The authorization server <span class="bcp14">MUST</span> validate the JWT according to the criteria
 below. Application of additional restrictions and policy are at the
-discretion of the authorization server.<a href="#section-4-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-4-2">
-<li id="section-4-2.1">
-          <p id="section-4-2.1.1">The authorization server <span class="bcp14">MUST</span> validate the DPoP proof in the DPoP
-header as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-4" class="relref">Section 4</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>. The <code>htm</code> claim
-of the DPoP JWT <span class="bcp14">MUST</span> be <code>POST</code>, and the <code>htu</code> claim must match
-the token endpoint URL.<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+discretion of the authorization server.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5-2">
+<li id="section-5-2.1">
+          <p id="section-5-2.1.1">The authorization server <span class="bcp14">MUST</span> validate the DPoP proof in the <code>DPoP</code>
+header field as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-5-2.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-2.2">
-          <p id="section-4-2.2.1">The authorization server <span class="bcp14">MUST</span> validate the JWT assertion according
-to the processing rules in <span><a href="https://rfc-editor.org/rfc/rfc7523#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> and <span><a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-05#section-4" class="relref">Section 4</a> of [<a href="#I-D.ietf-oauth-rfc7523bis" class="cite xref">I-D.ietf-oauth-rfc7523bis</a>]</span>.<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+        <li id="section-5-2.2">
+          <p id="section-5-2.2.1">The authorization server <span class="bcp14">MUST</span> validate the JWT assertion according
+to the processing rules in <span><a href="https://rfc-editor.org/rfc/rfc7523#section-3" class="relref">Section 3</a> of [<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> (including <span><a href="https://rfc-editor.org/rfc/rfc7523#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>) and <span><a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-11#section-4" class="relref">Section 4</a> of [<a href="#I-D.ietf-oauth-rfc7523bis" class="cite xref">I-D.ietf-oauth-rfc7523bis</a>]</span>.<a href="#section-5-2.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-2.3">
-          <p id="section-4-2.3.1">The authorization server <span class="bcp14">MUST</span> verify that the JWT assertion contains
-a <code>cnf</code> claim as defined in <span>[<a href="#RFC7800" class="cite xref">RFC7800</a>]</span>. This <code>cnf</code>
-claim <span class="bcp14">MUST</span> contain a <code>jkt</code> property with the hash of the public key
-as defined in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-4-2.3.1" class="pilcrow">¶</a></p>
+        <li id="section-5-2.3">
+          <p id="section-5-2.3.1">The authorization server <span class="bcp14">MUST</span> verify that the JWT assertion contains
+a <code>cnf</code> claim as defined in <span>[<a href="#RFC7800" class="cite xref">RFC7800</a>]</span>, and that the <code>cnf</code> claim
+contains a <code>jkt</code> confirmation method member as defined in
+<span><a href="https://rfc-editor.org/rfc/rfc9449#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-5-2.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-2.4">
-          <p id="section-4-2.4.1">The authorization server <span class="bcp14">MUST</span> verify that the value of the the
-<code>jkt</code> property of the <code>cnf</code> claim of the JWT assertion exactly
-matches the value of the <code>jkt</code> in the DPoP proof.<a href="#section-4-2.4.1" class="pilcrow">¶</a></p>
+        <li id="section-5-2.4">
+          <p id="section-5-2.4.1">The authorization server <span class="bcp14">MUST</span> verify that the public key in the <code>jwk</code>
+JOSE Header Parameter of the DPoP proof matches the key to which the
+JWT assertion is bound. This is done in the same way a resource server
+confirms that a DPoP-bound access token matches the key of a DPoP proof
+(check 12 in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-4.3" class="relref">Section 4.3</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>), using the JWK Thumbprint
+confirmation method of <span><a href="https://rfc-editor.org/rfc/rfc9449#section-6.1" class="relref">Section 6.1</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>: compute the
+base64url-encoded JWK SHA-256 Thumbprint <span>[<a href="#RFC7638" class="cite xref">RFC7638</a>]</span> of that public
+key, and compare it to the value of <code>cnf.jkt</code> in the assertion.<a href="#section-5-2.4.1" class="pilcrow">¶</a></p>
 </li>
       </ol>
-<p id="section-4-3">If any of these validation steps fail, the authorization server <span class="bcp14">MUST</span>
-return an <code>invalid_grant</code> error response.<a href="#section-4-3" class="pilcrow">¶</a></p>
-<div id="access-token-response">
-<section id="section-4.1">
-        <h3 id="name-access-token-response">
-<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-access-token-response" class="section-name selfRef">Access Token Response</a>
+<p id="section-5-3">If the DPoP proof is missing or invalid (step 1), the authorization server
+<span class="bcp14">MUST</span> return an error response as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-5" class="relref">Section 5</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>
+(<code>invalid_dpop_proof</code>), or <span><a href="https://rfc-editor.org/rfc/rfc9449#section-8" class="relref">Section 8</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span> (<code>use_dpop_nonce</code>) if
+a nonce is required.
+If any of the remaining validation steps fail, the authorization server <span class="bcp14">MUST</span>
+return an <code>invalid_grant</code> error response.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<div id="replay">
+<section id="section-5.1">
+        <h3 id="name-dpop-nonces-and-replay">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-dpop-nonces-and-replay" class="section-name selfRef">DPoP Nonces and Replay</a>
         </h3>
-<p id="section-4.1-1">If the request is valid, the authorization server issues an access
-token. The issued access token <span class="bcp14">SHOULD</span> also be DPoP-bound to the same
-key from the DPoP proof. In this case, the <code>token_type</code> of the access
-token <span class="bcp14">MUST</span> be <code>DPoP</code>, and the response <span class="bcp14">MUST</span> include a <code>token_type</code>
-parameter with the value <code>DPoP</code>. If a bearer token is issued, the
-<code>token_type</code> <span class="bcp14">MUST</span> be <code>Bearer</code>.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-1">The authorization server <span class="bcp14">MAY</span> require the client to include a nonce in
+the DPoP proof, as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-8" class="relref">Section 8</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>. In that case
+the authorization server responds to a request without a valid nonce
+with a <code>use_dpop_nonce</code> error and a <code>DPoP-Nonce</code> header field, and the
+client retries the request with a new DPoP proof containing the
+provided nonce and the same assertion.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">The authorization server <span class="bcp14">SHOULD</span> perform replay detection on the <code>jti</code>
+claim of the DPoP proof, as described in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-11.1" class="relref">Section 11.1</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.
+The authorization server <span class="bcp14">MAY</span> also reject assertions whose <code>jti</code> has
+already been used, as described in <span><a href="https://rfc-editor.org/rfc/rfc7523#section-3" class="relref">Section 3</a> of [<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3">If the authorization server records assertion <code>jti</code> values to detect
+replay, it <span class="bcp14">MUST NOT</span> record the assertion's <code>jti</code> as used when the request
+is rejected because of an invalid or missing DPoP proof or nonce.
+Otherwise a client following the nonce retry described above would have
+its assertion rejected as a replay. Performing the validation steps in
+the order given in <a href="#processing" class="auto internal xref">Section 5</a> achieves this.<a href="#section-5.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
+<div id="jwt-bearer">
+<section id="section-5.2">
+        <h3 id="name-use-with-the-jwt-bearer-gra">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-use-with-the-jwt-bearer-gra" class="section-name selfRef">Use with the JWT Bearer Grant Type</a>
+        </h3>
+<p id="section-5.2-1">An authorization server that supports the grant type defined in this
+specification <span class="bcp14">MUST NOT</span> accept a DPoP-bound JWT assertion as an
+authorization grant using the <code>urn:ietf:params:oauth:grant-type:jwt-bearer</code>
+grant type defined in <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>, and <span class="bcp14">MUST</span> return an <code>invalid_grant</code>
+error response if one is presented. This applies whether or not the
+request includes a <code>DPoP</code> header field.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">An authorization server that supports this specification <span class="bcp14">SHOULD</span> include
+<code>urn:ietf:params:oauth:grant-type:jwt-dpop</code> in the <code>grant_types_supported</code>
+value of its authorization server metadata <span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span>.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="access-token-response">
+<section id="section-6">
+      <h2 id="name-access-token-response">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-access-token-response" class="section-name selfRef">Access Token Response</a>
+      </h2>
+<p id="section-6-1">If the request is valid, the authorization server issues an access
+token. The issued access token <span class="bcp14">SHOULD</span> be DPoP-bound to the key from the
+DPoP proof, which is the same key to which the assertion is bound. In
+this case the <code>token_type</code> in the response <span class="bcp14">MUST</span> be <code>DPoP</code>, as described
+in <span><a href="https://rfc-editor.org/rfc/rfc9449#section-5" class="relref">Section 5</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The authorization server <span class="bcp14">MAY</span> instead issue a bearer access token, for
+example when the protected resources for which the token is intended
+do not support DPoP. In this case the <code>token_type</code> <span class="bcp14">MUST</span> be <code>Bearer</code>. See
+<a href="#bearer-access-tokens" class="auto internal xref">Section 7.2</a> for the security implications.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">If the authorization server issues a refresh token, the refresh token
+is subject to the binding requirements of <span><a href="https://rfc-editor.org/rfc/rfc9449#section-5" class="relref">Section 5</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>: a
+refresh token issued to a public client <span class="bcp14">MUST</span> be bound to the key from
+the DPoP proof. The authorization server <span class="bcp14">SHOULD NOT</span> issue a refresh
+token whose lifetime extends beyond what is permitted by the policy
+under which the assertion was issued.<a href="#section-6-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-considerations">
-<section id="section-5">
+<section id="section-7">
       <h2 id="name-security-considerations">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
-<p id="section-5-1">The security considerations described within the following
+<p id="section-7-1">The security considerations described within the following
 specifications are all applicable to this document:
 "Assertion Framework for OAuth 2.0 Client Authentication and Authorization Grants" <span>[<a href="#RFC7521" class="cite xref">RFC7521</a>]</span>,
 "JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants" <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>,
 "Updates to OAuth 2.0 JSON Web Token (JWT) Client Authentication and Assertion-Based Authorization Grants" <span>[<a href="#I-D.ietf-oauth-rfc7523bis" class="cite xref">I-D.ietf-oauth-rfc7523bis</a>]</span>,
 "OAuth 2.0 Demonstrating Proof of Possession (DPoP)" <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>,
 "The OAuth 2.0 Authorization Framework" <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>,
-and "JSON Web Token (JWT)" <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>.<a href="#section-5-1" class="pilcrow">¶</a></p>
+and "JSON Web Token (JWT)" <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="downgrade-to-the-jwt-bearer-grant">
+<section id="section-7.1">
+        <h3 id="name-downgrade-to-the-jwt-bearer">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-downgrade-to-the-jwt-bearer" class="section-name selfRef">Downgrade to the JWT Bearer Grant</a>
+        </h3>
+<p id="section-7.1-1">The binding of a DPoP-bound JWT assertion only provides protection if
+the authorization server enforces it. An attacker that obtains a
+DPoP-bound JWT assertion, but not the corresponding private key, could
+present the assertion using the <code>urn:ietf:params:oauth:grant-type:jwt-bearer</code>
+grant type instead of the grant type defined in this specification. An
+authorization server that processes the assertion only according to
+<span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> would ignore the <code>cnf</code> claim and issue an access token,
+defeating the binding entirely.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">Authorization servers that support this specification prevent this
+attack by rejecting DPoP-bound JWT assertions presented with the
+<code>jwt-bearer</code> grant type, as required by <a href="#jwt-bearer" class="auto internal xref">Section 5.2</a>.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">Authorization servers that do not implement this specification are not
+aware of this requirement and may accept a DPoP-bound JWT assertion as
+a bearer assertion. For this reason, an issuer of DPoP-bound JWT
+assertions <span class="bcp14">SHOULD NOT</span> issue one for use at an authorization server
+unless it knows that the authorization server supports this
+specification, for example because the authorization server advertises
+<code>urn:ietf:params:oauth:grant-type:jwt-dpop</code> in its <code>grant_types_supported</code>
+metadata <span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span>, or by prior configuration.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="bearer-access-tokens">
+<section id="section-7.2">
+        <h3 id="name-issuing-bearer-access-token">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-issuing-bearer-access-token" class="section-name selfRef">Issuing Bearer Access Tokens</a>
+        </h3>
+<p id="section-7.2-1">When the authorization server issues a bearer access token in response
+to this grant, the DPoP binding no longer protects the access token.
+The assertion cannot be used by a party that does not hold the private
+key, but the resulting access token can be used by any party that
+obtains it. Authorization servers <span class="bcp14">SHOULD</span> issue DPoP-bound access tokens
+whenever the intended protected resources support them.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<p id="section-7.2-2">Even when a bearer access token is issued, a refresh token issued to a
+public client is still bound to the DPoP key, as described in
+<span><a href="https://rfc-editor.org/rfc/rfc9449#section-5" class="relref">Section 5</a> of [<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>. As noted there, binding only the refresh
+token can improve the security posture even when protected resources
+do not support DPoP, since a stolen refresh token cannot be used to
+obtain new access tokens without the private key.<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-8">
+      <h2 id="name-privacy-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-8-1">The <code>jkt</code> value in a DPoP-bound JWT assertion is a stable identifier of
+the client's key. When a client uses the same key with an identity
+provider, with one or more authorization servers, and with the protected
+resources to which DPoP-bound access tokens are presented, each of these
+parties observes the same key, either in DPoP proofs or as <code>cnf.jkt</code> in
+assertions and access tokens. Colluding parties could use this to
+correlate the client's activity across them, beyond what is already
+possible from the identity of the client or the user.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">To limit this, a client <span class="bcp14">MAY</span> use a different DPoP key for each
+authorization server at which it presents DPoP-bound JWT assertions.
+Since the assertion is bound to the key used when requesting it (see
+<a href="#issuance" class="auto internal xref">Section 3</a>), the client needs to choose the key it will use at the
+target authorization server before requesting the assertion. A client
+<span class="bcp14">SHOULD NOT</span> reuse a DPoP key across unrelated users or sessions where
+doing so would let those otherwise unlinked activities be correlated.<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">This specification does not change the claims about the user that are
+conveyed in the assertion, and the privacy considerations of the
+specification defining the assertion, such as
+<span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>, continue to apply.<a href="#section-8-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-considerations">
-<section id="section-6">
+<section id="section-9">
       <h2 id="name-iana-considerations">
-<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
 <div id="oauth-uri-registration">
-<section id="section-6.1">
+<section id="section-9.1">
         <h3 id="name-oauth-uri-registration">
-<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-oauth-uri-registration" class="section-name selfRef">OAuth URI Registration</a>
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-oauth-uri-registration" class="section-name selfRef">OAuth URI Registration</a>
         </h3>
-<p id="section-6.1-1">This specification requests registration of the following value in the
-"OAuth URI" registry established by <span>[<a href="#RFC6755" class="cite xref">RFC6755</a>]</span>.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.1-1">This specification requests registration of the following value in the
+"OAuth URI" registry established by <span>[<a href="#RFC6755" class="cite xref">RFC6755</a>]</span>.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-6.1-2.1">
-            <p id="section-6.1-2.1.1">URN: <code>urn:ietf:params:oauth:grant-type:jwt-dpop</code><a href="#section-6.1-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-9.1-2.1">
+            <p id="section-9.1-2.1.1">URN: <code>urn:ietf:params:oauth:grant-type:jwt-dpop</code><a href="#section-9.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-6.1-2.2">
-            <p id="section-6.1-2.2.1">Common Name: DPoP-bound JWT Authorization Grant<a href="#section-6.1-2.2.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-9.1-2.2">
+            <p id="section-9.1-2.2.1">Common Name: DPoP-bound JWT Authorization Grant<a href="#section-9.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-6.1-2.3">
-            <p id="section-6.1-2.3.1">Change Controller: IESG<a href="#section-6.1-2.3.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-9.1-2.3">
+            <p id="section-9.1-2.3.1">Change Controller: IESG<a href="#section-9.1-2.3.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-6.1-2.4">
-            <p id="section-6.1-2.4.1">Specification Document(s): this document<a href="#section-6.1-2.4.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-9.1-2.4">
+            <p id="section-9.1-2.4.1">Specification Document(s): this document<a href="#section-9.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 </section>
 </div>
 </section>
 </div>
-<div id="sec-normative-references">
-<section id="section-7">
-      <h2 id="name-normative-references">
-<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+<div id="sec-combined-references">
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
       </h2>
+<div id="sec-normative-references">
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
 <dl class="references">
 <dt id="I-D.ietf-oauth-rfc7523bis">[I-D.ietf-oauth-rfc7523bis]</dt>
-      <dd>
-<span class="refAuthor">Jones, M. B.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Mortimore, C.</span>, and <span class="refAuthor">F. Skokan</span>, <span class="refTitle">"Updates to OAuth 2.0 JSON Web Token (JWT) Client Authentication and Assertion-Based Authorization Grants"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-rfc7523bis-05</span>, <time datetime="2026-01-12" class="refDate">12 January 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-05">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-05</a>&gt;</span>. </dd>
+        <dd>
+<span class="refAuthor">Jones, M. B.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Mortimore, C.</span>, and <span class="refAuthor">F. Skokan</span>, <span class="refTitle">"Updates to OAuth 2.0 JSON Web Token (JWT) Client Authentication and Assertion-Based Authorization Grants"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-rfc7523bis-11</span>, <time datetime="2026-04-28" class="refDate">28 April 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-11">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-11</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC2119">[RFC2119]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC6749">[RFC6749]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Hardt, D., Ed.</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework"</span>, <span class="seriesInfo">RFC 6749</span>, <span class="seriesInfo">DOI 10.17487/RFC6749</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6749">https://www.rfc-editor.org/rfc/rfc6749</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC6755">[RFC6755]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Campbell, B.</span> and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"An IETF URN Sub-Namespace for OAuth"</span>, <span class="seriesInfo">RFC 6755</span>, <span class="seriesInfo">DOI 10.17487/RFC6755</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6755">https://www.rfc-editor.org/rfc/rfc6755</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7519">[RFC7519]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7519">https://www.rfc-editor.org/rfc/rfc7519</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7521">[RFC7521]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Mortimore, C.</span>, <span class="refAuthor">Jones, M.</span>, and <span class="refAuthor">Y. Goland</span>, <span class="refTitle">"Assertion Framework for OAuth 2.0 Client Authentication and Authorization Grants"</span>, <span class="seriesInfo">RFC 7521</span>, <span class="seriesInfo">DOI 10.17487/RFC7521</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7521">https://www.rfc-editor.org/rfc/rfc7521</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7523">[RFC7523]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Campbell, B.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants"</span>, <span class="seriesInfo">RFC 7523</span>, <span class="seriesInfo">DOI 10.17487/RFC7523</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7523">https://www.rfc-editor.org/rfc/rfc7523</a>&gt;</span>. </dd>
 <dd class="break"></dd>
+<dt id="RFC7638">[RFC7638]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span> and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Key (JWK) Thumbprint"</span>, <span class="seriesInfo">RFC 7638</span>, <span class="seriesInfo">DOI 10.17487/RFC7638</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7638">https://www.rfc-editor.org/rfc/rfc7638</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="RFC7800">[RFC7800]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"Proof-of-Possession Key Semantics for JSON Web Tokens (JWTs)"</span>, <span class="seriesInfo">RFC 7800</span>, <span class="seriesInfo">DOI 10.17487/RFC7800</span>, <time datetime="2016-04" class="refDate">April 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7800">https://www.rfc-editor.org/rfc/rfc7800</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC8174">[RFC8174]</dt>
-      <dd>
+        <dd>
 <span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC9449">[RFC9449]</dt>
-    <dd>
+      <dd>
 <span class="refAuthor">Fett, D.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Lodderstedt, T.</span>, <span class="refAuthor">Jones, M.</span>, and <span class="refAuthor">D. Waite</span>, <span class="refTitle">"OAuth 2.0 Demonstrating Proof of Possession (DPoP)"</span>, <span class="seriesInfo">RFC 9449</span>, <span class="seriesInfo">DOI 10.17487/RFC9449</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9449">https://www.rfc-editor.org/rfc/rfc9449</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 </dl>
 </section>
 </div>
-<div id="acknowledgments">
+<div id="sec-informative-references">
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-oauth-identity-assertion-authz-grant">[I-D.ietf-oauth-identity-assertion-authz-grant]</dt>
+        <dd>
+<span class="refAuthor">Parecki, A.</span>, <span class="refAuthor">McGuinness, K.</span>, and <span class="refAuthor">B. Campbell</span>, <span class="refTitle">"Identity Assertion JWT Authorization Grant"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-identity-assertion-authz-grant-04</span>, <time datetime="2026-05-21" class="refDate">21 May 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-identity-assertion-authz-grant-04">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-identity-assertion-authz-grant-04</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8414">[RFC8414]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Sakimura, N.</span>, and <span class="refAuthor">J. Bradley</span>, <span class="refTitle">"OAuth 2.0 Authorization Server Metadata"</span>, <span class="seriesInfo">RFC 8414</span>, <span class="seriesInfo">DOI 10.17487/RFC8414</span>, <time datetime="2018-06" class="refDate">June 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8414">https://www.rfc-editor.org/rfc/rfc8414</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8693">[RFC8693]</dt>
+      <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Nadalin, A.</span>, <span class="refAuthor">Campbell, B., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"OAuth 2.0 Token Exchange"</span>, <span class="seriesInfo">RFC 8693</span>, <span class="seriesInfo">DOI 10.17487/RFC8693</span>, <time datetime="2020-01" class="refDate">January 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8693">https://www.rfc-editor.org/rfc/rfc8693</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="complete-example">
 <section id="appendix-A">
+      <h2 id="name-complete-example">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-complete-example" class="section-name selfRef">Complete Example</a>
+      </h2>
+<p id="appendix-A-1">This appendix contains a complete example of an access token request
+using a DPoP-bound ID-JAG. The signatures in this example can be
+verified using the public keys shown. Line breaks within JWTs and
+within the canonical JWK below are for display purposes only.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div id="identity-provider-key">
+<section id="appendix-A.1">
+        <h3 id="name-identity-provider-key">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-identity-provider-key" class="section-name selfRef">Identity Provider Key</a>
+        </h3>
+<p id="appendix-A.1-1">The ID-JAG is signed by the identity provider using the following
+key, shown as a JWK:<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.1-2">
+<pre>
+{
+  "kty": "EC",
+  "crv": "P-256",
+  "x": "RQAT9mqfwKatL9zm1ckKHIyDvjt45YePri8FEw3bbBw",
+  "y": "do5FLL-GZqbHgCQlkNs-qpJC6fWghRQsAwrl9cPD73M",
+  "kid": "idp-key-1",
+  "use": "sig",
+  "alg": "ES256"
+}
+</pre><a href="#appendix-A.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="dpop-bound-jwt-assertion">
+<section id="appendix-A.2">
+        <h3 id="name-dpop-bound-jwt-assertion">
+<a href="#appendix-A.2" class="section-number selfRef">A.2. </a><a href="#name-dpop-bound-jwt-assertion" class="section-name selfRef">DPoP-Bound JWT Assertion</a>
+        </h3>
+<p id="appendix-A.2-1">The decoded JOSE header of the ID-JAG:<a href="#appendix-A.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2-2">
+<pre>
+{
+  "typ": "oauth-id-jag+jwt",
+  "alg": "ES256",
+  "kid": "idp-key-1"
+}
+</pre><a href="#appendix-A.2-2" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.2-3">The decoded claims of the ID-JAG:<a href="#appendix-A.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2-4">
+<pre>
+{
+  "iss": "https://idp.example.com",
+  "sub": "U019488227",
+  "aud": "https://as.example.net",
+  "client_id": "f53f191f9311af35",
+  "exp": 1793400300,
+  "iat": 1793400000,
+  "jti": "9a8b3cb8-7a1e-4d2c-8c5e-0f3e6a2c7b1d",
+  "cnf": {
+    "jkt": "GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA"
+  }
+}
+</pre><a href="#appendix-A.2-4" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.2-5">The encoded and signed ID-JAG:<a href="#appendix-A.2-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2-6">
+<pre>
+eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYiLCJraWQiOiJp
+ZHAta2V5LTEifQ.
+eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IlUwMTk0ODgy
+MjciLCJhdWQiOiJodHRwczovL2FzLmV4YW1wbGUubmV0IiwiY2xpZW50X2lkIjoi
+ZjUzZjE5MWY5MzExYWYzNSIsImV4cCI6MTc5MzQwMDMwMCwiaWF0IjoxNzkzNDAw
+MDAwLCJqdGkiOiI5YThiM2NiOC03YTFlLTRkMmMtOGM1ZS0wZjNlNmEyYzdiMWQi
+LCJjbmYiOnsiamt0IjoiR1hJRXM0dGhNLWNWWmtXN21VczktOVI3MzFEbUk3YWVl
+QkZtNFZZQ01VQSJ9fQ.
+c_PUFFNDDHvgWUxpCQ_jsiMaP4ZU0xXqkWFQ5lGHT_WYsjlAfOboUOSxuHR-_GjM
+P3cSmUETAr_ux2ivS828xw
+</pre><a href="#appendix-A.2-6" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="dpop-proof">
+<section id="appendix-A.3">
+        <h3 id="name-dpop-proof">
+<a href="#appendix-A.3" class="section-number selfRef">A.3. </a><a href="#name-dpop-proof" class="section-name selfRef">DPoP Proof</a>
+        </h3>
+<p id="appendix-A.3-1">The decoded JOSE header of the DPoP proof, which contains the client's
+public key:<a href="#appendix-A.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3-2">
+<pre>
+{
+  "typ": "dpop+jwt",
+  "alg": "ES256",
+  "jwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "xSYHiPmBtVKQAzs79FRVe1dI7Y_Lu93I67WxbSsg9P0",
+    "y": "zHt5qFsvN2EYcSWf5hq1GqpcqmhONiB9W_YIgvsYqmQ"
+  }
+}
+</pre><a href="#appendix-A.3-2" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.3-3">The decoded claims of the DPoP proof:<a href="#appendix-A.3-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3-4">
+<pre>
+{
+  "jti": "e1j3V_bKic8-LAEB",
+  "htm": "POST",
+  "htu": "https://as.example.net/token",
+  "iat": 1793400005
+}
+</pre><a href="#appendix-A.3-4" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.3-5">The encoded and signed DPoP proof:<a href="#appendix-A.3-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3-6">
+<pre>
+eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVD
+IiwiY3J2IjoiUC0yNTYiLCJ4IjoieFNZSGlQbUJ0VktRQXpzNzlGUlZlMWRJN1lf
+THU5M0k2N1d4YlNzZzlQMCIsInkiOiJ6SHQ1cUZzdk4yRVljU1dmNWhxMUdxcGNx
+bWhPTmlCOVdfWUlndnNZcW1RIn19.
+eyJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIiwiaHRtIjoiUE9TVCIsImh0dSI6Imh0
+dHBzOi8vYXMuZXhhbXBsZS5uZXQvdG9rZW4iLCJpYXQiOjE3OTM0MDAwMDV9.
+S0ygnxypg5vIkyq7HCRz03MNafRa1Hk1NFsCGHbjFc4mrRQic9X7TpBxMy2C1BTT
+6fjbCEFS5J_GJKuwdGxSZA
+</pre><a href="#appendix-A.3-6" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="thumbprint-comparison">
+<section id="appendix-A.4">
+        <h3 id="name-thumbprint-comparison">
+<a href="#appendix-A.4" class="section-number selfRef">A.4. </a><a href="#name-thumbprint-comparison" class="section-name selfRef">Thumbprint Comparison</a>
+        </h3>
+<p id="appendix-A.4-1">The authorization server constructs the canonical JWK of the public
+key in the <code>jwk</code> header of the DPoP proof, as described in
+<span><a href="https://rfc-editor.org/rfc/rfc7638#section-3" class="relref">Section 3</a> of [<a href="#RFC7638" class="cite xref">RFC7638</a>]</span>:<a href="#appendix-A.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.4-2">
+<pre>
+{"crv":"P-256","kty":"EC",
+"x":"xSYHiPmBtVKQAzs79FRVe1dI7Y_Lu93I67WxbSsg9P0",
+"y":"zHt5qFsvN2EYcSWf5hq1GqpcqmhONiB9W_YIgvsYqmQ"}
+</pre><a href="#appendix-A.4-2" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.4-3">The base64url-encoded SHA-256 hash of this value is:<a href="#appendix-A.4-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.4-4">
+<pre>
+GXIEs4thM-cVZkW7mUs9-9R731DmI7aeeBFm4VYCMUA
+</pre><a href="#appendix-A.4-4" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.4-5">This matches the value of <code>cnf.jkt</code> in the ID-JAG, so the assertion
+is bound to the key used to sign the DPoP proof.<a href="#appendix-A.4-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="access-token-request">
+<section id="appendix-A.5">
+        <h3 id="name-access-token-request">
+<a href="#appendix-A.5" class="section-number selfRef">A.5. </a><a href="#name-access-token-request" class="section-name selfRef">Access Token Request</a>
+        </h3>
+<p id="appendix-A.5-1">The resulting access token request:<a href="#appendix-A.5-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.5-2">
+<pre>
+POST /token HTTP/1.1
+Host: as.example.net
+Content-Type: application/x-www-form-urlencoded
+DPoP:
+  eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVD
+  IiwiY3J2IjoiUC0yNTYiLCJ4IjoieFNZSGlQbUJ0VktRQXpzNzlGUlZlMWRJN1lf
+  THU5M0k2N1d4YlNzZzlQMCIsInkiOiJ6SHQ1cUZzdk4yRVljU1dmNWhxMUdxcGNx
+  bWhPTmlCOVdfWUlndnNZcW1RIn19.
+  eyJqdGkiOiJlMWozVl9iS2ljOC1MQUVCIiwiaHRtIjoiUE9TVCIsImh0dSI6Imh0
+  dHBzOi8vYXMuZXhhbXBsZS5uZXQvdG9rZW4iLCJpYXQiOjE3OTM0MDAwMDV9.
+  S0ygnxypg5vIkyq7HCRz03MNafRa1Hk1NFsCGHbjFc4mrRQic9X7TpBxMy2C1BTT
+  6fjbCEFS5J_GJKuwdGxSZA
+
+grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-dpop
+&amp;assertion=
+eyJ0eXAiOiJvYXV0aC1pZC1qYWcrand0IiwiYWxnIjoiRVMyNTYiLCJraWQiOiJp
+ZHAta2V5LTEifQ.
+eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbSIsInN1YiI6IlUwMTk0ODgy
+MjciLCJhdWQiOiJodHRwczovL2FzLmV4YW1wbGUubmV0IiwiY2xpZW50X2lkIjoi
+ZjUzZjE5MWY5MzExYWYzNSIsImV4cCI6MTc5MzQwMDMwMCwiaWF0IjoxNzkzNDAw
+MDAwLCJqdGkiOiI5YThiM2NiOC03YTFlLTRkMmMtOGM1ZS0wZjNlNmEyYzdiMWQi
+LCJjbmYiOnsiamt0IjoiR1hJRXM0dGhNLWNWWmtXN21VczktOVI3MzFEbUk3YWVl
+QkZtNFZZQ01VQSJ9fQ.
+c_PUFFNDDHvgWUxpCQ_jsiMaP4ZU0xXqkWFQ5lGHT_WYsjlAfOboUOSxuHR-_GjM
+P3cSmUETAr_ux2ivS828xw
+</pre><a href="#appendix-A.5-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-B">
       <h2 id="name-acknowledgments">
 <a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
       </h2>
-<p id="appendix-A-1">The authors would like to thank the following people for their contributions and reviews of this specification: Filip Skokan, Karl McGuinness.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<p id="appendix-B-1">The authors would like to thank the following people for their contributions and reviews of this specification: Filip Skokan, Karl McGuinness.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="document-history">
-<section id="appendix-B">
+<section id="appendix-C">
       <h2 id="name-document-history">
 <a href="#name-document-history" class="section-name selfRef">Document History</a>
       </h2>
-<p id="appendix-B-1">[[ To be removed from the final specification ]]<a href="#appendix-B-1" class="pilcrow">¶</a></p>
-<p id="appendix-B-2">-01<a href="#appendix-B-2" class="pilcrow">¶</a></p>
+<p id="appendix-C-1">[[ To be removed from the final specification ]]<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<p id="appendix-C-2">-02<a href="#appendix-C-2" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-B-3.1">
-          <p id="appendix-B-3.1.1">Changed DPoP check to use <code>jkt</code> string instead of <code>jwk</code> object to be able to use simple string comparison.<a href="#appendix-B-3.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="appendix-C-3.1">
+          <p id="appendix-C-3.1.1">Rewrote the abstract to describe binding of the assertion rather than the access token.<a href="#appendix-C-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.2">
+          <p id="appendix-C-3.2.1">Defined "DPoP-bound JWT assertion" and used the term consistently.<a href="#appendix-C-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.3">
+          <p id="appendix-C-3.3.1">Use DPoP error codes for DPoP proof validation failures.<a href="#appendix-C-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.4">
+          <p id="appendix-C-3.4.1">Moved Access Token Response to a top-level section.<a href="#appendix-C-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.5">
+          <p id="appendix-C-3.5.1">Added a section describing requirements on the issuer of a DPoP-bound JWT assertion, with an example.<a href="#appendix-C-3.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.6">
+          <p id="appendix-C-3.6.1">Added the Identity Assertion JWT Authorization Grant as a motivating use case.<a href="#appendix-C-3.6.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.7">
+          <p id="appendix-C-3.7.1">Added Privacy Considerations.<a href="#appendix-C-3.7.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.8">
+          <p id="appendix-C-3.8.1">Added a complete, verifiable example in an appendix.<a href="#appendix-C-3.8.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.9">
+          <p id="appendix-C-3.9.1">Added guidance on DPoP nonces and replay detection, including not consuming the assertion on a nonce retry.<a href="#appendix-C-3.9.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.10">
+          <p id="appendix-C-3.10.1">Clarified when bearer access tokens may be issued, and the binding of refresh tokens.<a href="#appendix-C-3.10.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.11">
+          <p id="appendix-C-3.11.1">Added requirement to reject DPoP-bound JWT assertions presented with the <code>jwt-bearer</code> grant type, and security considerations for downgrade attacks.<a href="#appendix-C-3.11.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="appendix-C-3.12">
+          <p id="appendix-C-3.12.1">Clarified that the DPoP proof's <code>jwk</code> is compared to <code>cnf.jkt</code> by computing its JWK SHA-256 Thumbprint, as a resource server does for DPoP-bound access tokens.<a href="#appendix-C-3.12.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="appendix-C-4">-01<a href="#appendix-C-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-C-5.1">
+          <p id="appendix-C-5.1.1">Changed DPoP check to use <code>jkt</code> string instead of <code>jwk</code> object to be able to use simple string comparison.<a href="#appendix-C-5.1.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>
 </div>
 <div id="authors-addresses">
-<section id="appendix-C">
+<section id="appendix-D">
       <h2 id="name-authors-address">
 <a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
       </h2>
