@@ -158,7 +158,7 @@ DPoP-bound JWT assertions.
 ## Using DPoP-Bound JWT Assertions as Authorization Grants {#parameters}
 
 To use a DPoP-bound JWT assertion as an authorization grant, the client makes an
-access token request as defined in {{Section 4 of RFC7521}}
+access token request as defined in {{Section 4.1 of RFC7521}}
 with the following specific parameter values and encodings.
 
 `grant_type`:
@@ -169,7 +169,7 @@ with the following specific parameter values and encodings.
   `cnf` claim as described in {{processing}}.
 
 `scope`:
-: OPTIONAL - The `scope` parameter may be used, as defined in {{RFC7521}},
+: OPTIONAL - The `scope` parameter may be used, as defined in {{Section 4.1 of RFC7521}},
   to indicate the requested scope.
 
 Authentication of the client is optional, as described in
@@ -204,7 +204,7 @@ discretion of the authorization server.
 1. The authorization server MUST validate the DPoP proof in the `DPoP`
    header field as described in {{Section 4.3 of RFC9449}}.
 2. The authorization server MUST validate the JWT assertion according
-   to the processing rules in {{Section 3.1 of RFC7523}} and {{Section 4 of I-D.ietf-oauth-rfc7523bis}}.
+   to the processing rules in {{Section 3 of RFC7523}} (including {{Section 3.1 of RFC7523}}) and {{Section 4 of I-D.ietf-oauth-rfc7523bis}}.
 3. The authorization server MUST verify that the JWT assertion contains
    a `cnf` claim as defined in {{RFC7800}}, and that the `cnf` claim
    contains a `jkt` confirmation method member as defined in
@@ -212,13 +212,16 @@ discretion of the authorization server.
 4. The authorization server MUST verify that the public key in the `jwk`
    JOSE Header Parameter of the DPoP proof matches the key to which the
    JWT assertion is bound. This is done in the same way a resource server
-   verifies a DPoP-bound access token ({{Section 4.3 of RFC9449}}, check 12):
-   compute the base64url-encoded JWK SHA-256 Thumbprint {{RFC7638}} of
-   that public key, and compare it to the value of `cnf.jkt` in the assertion.
+   confirms that a DPoP-bound access token matches the key of a DPoP proof
+   (check 12 in {{Section 4.3 of RFC9449}}), using the JWK Thumbprint
+   confirmation method of {{Section 6.1 of RFC9449}}: compute the
+   base64url-encoded JWK SHA-256 Thumbprint {{RFC7638}} of that public
+   key, and compare it to the value of `cnf.jkt` in the assertion.
 
 If the DPoP proof is missing or invalid (step 1), the authorization server
 MUST return an error response as described in {{Section 5 of RFC9449}}
-(e.g., `invalid_dpop_proof`, or `use_dpop_nonce` if a nonce is required).
+(`invalid_dpop_proof`), or {{Section 8 of RFC9449}} (`use_dpop_nonce`) if
+a nonce is required.
 If any of the remaining validation steps fail, the authorization server MUST
 return an `invalid_grant` error response.
 
