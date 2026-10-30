@@ -319,11 +319,18 @@ metadata {{RFC8414}}, or by prior configuration.
 ## Issuing Bearer Access Tokens {#bearer-access-tokens}
 
 When the authorization server issues a bearer access token in response
-to this grant, the protection provided by the DPoP binding ends at the
-token endpoint. The assertion cannot be used by a party that does not
-hold the private key, but the resulting access token can be used by any
-party that obtains it. Authorization servers SHOULD issue DPoP-bound
-access tokens whenever the intended protected resources support them.
+to this grant, the DPoP binding no longer protects the access token.
+The assertion cannot be used by a party that does not hold the private
+key, but the resulting access token can be used by any party that
+obtains it. Authorization servers SHOULD issue DPoP-bound access tokens
+whenever the intended protected resources support them.
+
+Even when a bearer access token is issued, a refresh token issued to a
+public client is still bound to the DPoP key, as described in
+{{Section 5 of RFC9449}}. As noted there, binding only the refresh
+token can improve the security posture even when protected resources
+do not support DPoP, since a stolen refresh token cannot be used to
+obtain new access tokens without the private key.
 
 # Privacy Considerations
 
